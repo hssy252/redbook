@@ -17,6 +17,7 @@
   <!-- 子模块管理 -->
   <modules>
     <module>xiaohongshu-auth</module>
+    <module>xiaohongshu-framework</module>
   </modules>
 
   <properties>
