@@ -77,6 +77,12 @@
         <scope>import</scope>
       </dependency>
 
+      <dependency>
+        <groupId>com.hssy.framework.commom</groupId>
+        <artifactId>xiaohongshu-common</artifactId>
+        <version>${revision}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

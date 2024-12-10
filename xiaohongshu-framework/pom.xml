@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.hssy</groupId>
         <artifactId>xiaohongshu</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
 
@@ -17,7 +17,7 @@
     <description>平台基础设施层：封装一些常用功能，供各个业务线拿来即用</description>
 
     <modules>
-
+        <module>xiaohongshu-common</module>
     </modules>
 
 </project>
