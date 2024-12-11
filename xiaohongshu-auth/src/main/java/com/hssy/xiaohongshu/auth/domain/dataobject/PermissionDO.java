@@ -1,5 +1,6 @@
 package com.hssy.xiaohongshu.auth.domain.dataobject;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,9 +30,9 @@ public class PermissionDO {
 
     private Byte status;
 
-    private Date createTime;
+    private LocalDateTime createTime;
 
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
     private Boolean isDeleted;
 
