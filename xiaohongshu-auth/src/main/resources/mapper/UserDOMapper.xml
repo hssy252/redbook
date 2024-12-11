@@ -27,6 +27,9 @@
     from t_user
     where id = #{id,jdbcType=BIGINT}
   </select>
+  <select id="selectByPhone" resultType="com.hssy.xiaohongshu.auth.domain.dataobject.UserDO">
+    select id,password from t_user where phone = #{phone}
+  </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
     delete from t_user
     where id = #{id,jdbcType=BIGINT}
