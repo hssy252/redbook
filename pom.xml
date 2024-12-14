@@ -192,6 +192,12 @@
         <version>${sa-token.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.hssy</groupId>
+        <artifactId>xiaohongshu-spring-boot-starter-jackson</artifactId>
+        <version>${revision}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

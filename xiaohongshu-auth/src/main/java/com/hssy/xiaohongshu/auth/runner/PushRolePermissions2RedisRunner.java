@@ -66,13 +66,13 @@ public class PushRolePermissions2RedisRunner implements ApplicationRunner {
             }
 
             //查询所有启用的角色id
-            List<RoleDO> roleDOList = roleDOMapper.selectEnabledList();
-            if (CollUtil.isNotEmpty(roleDOList)) {
-                List<Long> roleIds = roleDOList.stream().map((RoleDO::getId)).collect(Collectors.toList());
+            List<RoleDO> roleDOS = roleDOMapper.selectEnabledList();
+            if (CollUtil.isNotEmpty(roleDOS)) {
+                List<Long> roleIds = roleDOS.stream().map((RoleDO::getId)).collect(Collectors.toList());
 
                 // 根据角色id查询对应的权限
                 List<RolePermissionDO> rolePermissionDOList = rolePermissionDOMapper.selectByRoleIds(roleIds);
-                Map<Long, List<Long>> rolePermissionMap = rolePermissionDOList.stream().collect(Collectors.groupingBy(RolePermissionDO::getRoleId,
+                Map<Long, List<Long>> roleIdPermissionIdsMap = rolePermissionDOList.stream().collect(Collectors.groupingBy(RolePermissionDO::getRoleId,
                     Collectors.mapping(RolePermissionDO::getPermissionId, Collectors.toList())));
 
                 // 查询 APP 端所有被启用的权限
@@ -83,35 +83,34 @@ public class PushRolePermissions2RedisRunner implements ApplicationRunner {
                     Collectors.toMap(PermissionDO::getId, permissionDO -> permissionDO)
                 );
 
-                // 组织 角色ID-权限 关系
-                Map<Long, List<PermissionDO>> roleIdPermissionDOMap = Maps.newHashMap();
+                // 组织 角色-权限 关系
+                Map<String, List<String>> roleKeyPermissionsMap = Maps.newHashMap();
 
                 // 循环所有角色
-                roleDOList.forEach(roleDO -> {
+                roleDOS.forEach(roleDO -> {
                     // 当前角色 ID
                     Long roleId = roleDO.getId();
+                    // 当前角色 roleKey
+                    String roleKey = roleDO.getRoleKey();
                     // 当前角色 ID 对应的权限 ID 集合
-                    List<Long> permissionIds = rolePermissionMap.get(roleId);
+                    List<Long> permissionIds = roleIdPermissionIdsMap.get(roleId);
                     if (CollUtil.isNotEmpty(permissionIds)) {
-                        List<PermissionDO> perDOS = Lists.newArrayList();
+                        List<String> permissionKeys = Lists.newArrayList();
                         permissionIds.forEach(permissionId -> {
                             // 根据权限 ID 获取具体的权限 DO 对象
                             PermissionDO permissionDO = permissionIdDOMap.get(permissionId);
-                            if (Objects.nonNull(permissionDO)) {
-                                perDOS.add(permissionDO);
-                            }
+                            permissionKeys.add(permissionDO.getPermissionKey());
                         });
-                        roleIdPermissionDOMap.put(roleId, perDOS);
+                        roleKeyPermissionsMap.put(roleKey, permissionKeys);
                     }
                 });
 
-                // 同步至 Redis 中，方便后续网关查询鉴权使用
-                roleIdPermissionDOMap.forEach((roleId, permissionDO) -> {
-                    String key = RedisKeyConstants.buildRolePermissionsKey(roleId);
-                    redisTemplate.opsForValue().set(key, JsonUtils.toJsonString(permissionDO));
+                // 同步至 Redis 中，方便后续网关查询 Redis, 用于鉴权
+                roleKeyPermissionsMap.forEach((roleKey, permissions) -> {
+                    String key = RedisKeyConstants.buildRolePermissionsKey(roleKey);
+                    redisTemplate.opsForValue().set(key, JsonUtils.toJsonString(permissions));
                 });
             }
-
             log.info("==> 服务启动，成功同步角色权限数据到 Redis 中...");
         } catch (Exception e) {
             log.error("==> 同步角色权限数据到 Redis 中失败: ", e);

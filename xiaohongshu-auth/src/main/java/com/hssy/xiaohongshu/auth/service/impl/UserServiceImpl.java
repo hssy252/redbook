@@ -11,8 +11,10 @@ import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.xiaohongshu.auth.constant.RedisKeyConstants;
 import com.hssy.xiaohongshu.auth.constant.RoleConstants;
+import com.hssy.xiaohongshu.auth.domain.dataobject.RoleDO;
 import com.hssy.xiaohongshu.auth.domain.dataobject.UserDO;
 import com.hssy.xiaohongshu.auth.domain.dataobject.UserRoleDO;
+import com.hssy.xiaohongshu.auth.domain.mapper.RoleDOMapper;
 import com.hssy.xiaohongshu.auth.domain.mapper.UserDOMapper;
 import com.hssy.xiaohongshu.auth.domain.mapper.UserRoleDOMapper;
 import com.hssy.xiaohongshu.auth.enums.LoginTypeEnum;
@@ -21,6 +23,7 @@ import com.hssy.xiaohongshu.auth.model.vo.user.UserLoginReqVO;
 import com.hssy.xiaohongshu.auth.service.UserService;
 import jakarta.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +53,9 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     private UserRoleDOMapper userRoleDOMapper;
+
+    @Resource
+    private RoleDOMapper roleDOMapper;
 
     @Resource
     private TransactionTemplate transactionTemplate;
@@ -151,10 +157,13 @@ public class UserServiceImpl implements UserService {
                     .build();
                 userRoleDOMapper.insert(userRoleDO);
 
-                // 将该用户的角色 ID 存入 Redis 中
-                List<Long> roles = Lists.newArrayList();
-                roles.add(RoleConstants.COMMON_USER_ROLE_ID);
-                String userRolesKey = RedisKeyConstants.buildUserRoleKey(phone);
+                RoleDO roleDO = roleDOMapper.selectByPrimaryKey(RoleConstants.COMMON_USER_ROLE_ID);
+
+                // 将该用户的角色key 存入 Redis 中，指定初始容量为 1，这样可以减少在扩容时的性能开销
+                List<String> roles = new ArrayList<>(1);
+                roles.add(roleDO.getRoleKey());
+
+                String userRolesKey = RedisKeyConstants.buildUserRoleKey(userId);
                 redisTemplate.opsForValue().set(userRolesKey, JsonUtils.toJsonString(roles));
 
                 return userId;
