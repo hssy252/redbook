@@ -23,6 +23,8 @@
         <module>xiaohongshu-spring-boot-starter-biz-operationlog</module>
         <!--jackson配置组件-->
         <module>xiaohongshu-spring-boot-starter-jackson</module>
+        <!--用户上下文组件-->
+        <module>xiaohongshu-spring-boot-starter-biz-context</module>
     </modules>
 
 </project>
