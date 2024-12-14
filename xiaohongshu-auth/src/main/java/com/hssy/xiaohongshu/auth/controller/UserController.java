@@ -2,6 +2,7 @@ package com.hssy.xiaohongshu.auth.controller;
 
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.auth.filter.LoginUserContextHolder;
 import com.hssy.xiaohongshu.auth.model.vo.user.UserLoginReqVO;
 import com.hssy.xiaohongshu.auth.service.UserService;
 import jakarta.annotation.Resource;
@@ -37,9 +38,9 @@ public class UserController {
 
     @PostMapping("/logout")
     @ApiOperationLog(description = "账号登出")
-    public Response<?> logout(@RequestHeader("userId") String userId) {
-        log.info("==> 网关传过来的用户 ID: {}", userId);
-        return userService.logout(Long.parseLong(userId));
+    public Response<?> logout() {
+        Long userId = LoginUserContextHolder.getUserId();
+        return userService.logout(userId);
     }
 
 }

@@ -1,6 +1,7 @@
 package com.hssy.xiaohongshu.gateway.filter;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.hssy.framework.commom.constant.GlobalConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -23,7 +24,7 @@ public class AddUserId2HeaderFilter implements GlobalFilter {
     /**
      * 请求头中，用户 ID 的键
      */
-    private static final String HEADER_USER_ID = "userId";
+//    private static final String HEADER_USER_ID = "userId";
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -43,7 +44,7 @@ public class AddUserId2HeaderFilter implements GlobalFilter {
 
         Long finalUserId = userId;
         ServerWebExchange newExchange = exchange.mutate()
-            .request(builder -> builder.header(HEADER_USER_ID, String.valueOf(finalUserId))) // 将用户 ID 设置到请求头中
+            .request(builder -> builder.header(GlobalConstants.USER_ID, String.valueOf(finalUserId))) // 将用户 ID 设置到请求头中
             .build();
         return chain.filter(newExchange);
     }
