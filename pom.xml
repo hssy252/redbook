@@ -22,6 +22,8 @@
     <module>xiaohongshu-framework</module>
     <!--网关服务-->
     <module>xiaohongshu-gateway</module>
+    <!--对象存储服务-->
+    <module>xiaohongshu-oss</module>
   </modules>
 
   <properties>
