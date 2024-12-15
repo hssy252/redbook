@@ -19,6 +19,8 @@ import com.hssy.xiaohongshu.auth.domain.mapper.UserDOMapper;
 import com.hssy.xiaohongshu.auth.domain.mapper.UserRoleDOMapper;
 import com.hssy.xiaohongshu.auth.enums.LoginTypeEnum;
 import com.hssy.xiaohongshu.auth.enums.ResponseCodeEnum;
+import com.hssy.xiaohongshu.auth.filter.LoginUserContextHolder;
+import com.hssy.xiaohongshu.auth.model.vo.user.UpdatePasswordReqVO;
 import com.hssy.xiaohongshu.auth.model.vo.user.UserLoginReqVO;
 import com.hssy.xiaohongshu.auth.service.UserService;
 import jakarta.annotation.Resource;
@@ -29,6 +31,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -59,6 +62,9 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    @Resource
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public Response<String> loginAndRegister(UserLoginReqVO userLoginReqVO) {
@@ -129,6 +135,26 @@ public class UserServiceImpl implements UserService {
     public Response<?> logout(Long userId) {
         // 退出登录（指定用户id）
         StpUtil.logout(userId);
+
+        return Response.success();
+    }
+
+    @Override
+    public Response<?> updatePassword(UpdatePasswordReqVO updatePasswordReqVO) {
+        // 获取新密码
+        String newPassword = updatePasswordReqVO.getNewPassword();
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+
+        Long userId = LoginUserContextHolder.getUserId();
+
+        UserDO userDO = UserDO.builder()
+            .id(userId)
+            .password(encodedPassword)
+            .updateTime(LocalDateTime.now())
+            .build();
+
+        userDOMapper.updateByPrimaryKeySelective(userDO);
 
         return Response.success();
     }

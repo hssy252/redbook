@@ -1,6 +1,7 @@
 package com.hssy.xiaohongshu.auth.service;
 
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.auth.model.vo.user.UpdatePasswordReqVO;
 import com.hssy.xiaohongshu.auth.model.vo.user.UserLoginReqVO;
 
 /**
@@ -25,4 +26,10 @@ public interface UserService {
      */
     Response<?> logout(Long userId);
 
+    /**
+     * 修改用户密码
+     * @param updatePasswordReqVO
+     * @return
+     */
+    Response<?> updatePassword(UpdatePasswordReqVO updatePasswordReqVO);
 }

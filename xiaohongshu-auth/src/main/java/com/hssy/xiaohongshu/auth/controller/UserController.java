@@ -3,6 +3,7 @@ package com.hssy.xiaohongshu.auth.controller;
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.auth.filter.LoginUserContextHolder;
+import com.hssy.xiaohongshu.auth.model.vo.user.UpdatePasswordReqVO;
 import com.hssy.xiaohongshu.auth.model.vo.user.UserLoginReqVO;
 import com.hssy.xiaohongshu.auth.service.UserService;
 import jakarta.annotation.Resource;
@@ -41,6 +42,12 @@ public class UserController {
     public Response<?> logout() {
         Long userId = LoginUserContextHolder.getUserId();
         return userService.logout(userId);
+    }
+
+    @PostMapping("/password/update")
+    @ApiOperationLog(description = "更改密码")
+    public Response<?> updatePassword(@RequestBody @Validated UpdatePasswordReqVO updatePasswordReqVO){
+        return userService.updatePassword(updatePasswordReqVO);
     }
 
 }
