@@ -1,5 +1,7 @@
 package com.hssy.xiaohongshu.auth.service.impl;
 
+import static org.bouncycastle.cms.RecipientId.password;
+
 import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import com.google.common.base.Preconditions;
@@ -108,11 +110,25 @@ public class UserServiceImpl implements UserService {
                 }
                 break;
             case PASSWORD: // 密码登录
-                // todo
+                UserDO user = userDOMapper.selectByPhone(userLoginReqVO.getPhone());
+                if(Objects.isNull(user)){
+                    throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+                }
+                // 用户存在则判断密码是否相等
+                String encodedPassword = user.getPassword();
+
+                String rawPassword = userLoginReqVO.getPassword();
+
+                // 密码错误
+                if(!passwordEncoder.matches(rawPassword, encodedPassword)){
+                    throw new BizException(ResponseCodeEnum.PHONE_OR_PASSWORD_ERROR);
+                }
+
+                userId = user.getId();
 
                 break;
             default:
-                break;
+                throw new BizException(ResponseCodeEnum.LOGIN_TYPE_ERROR);
         }
 
         // SaToken 登录用户, 入参为用户 ID
