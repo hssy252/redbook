@@ -12,7 +12,9 @@
 
     <!-- 子模块管理 -->
     <modules>
+        <!--对外暴露的微服务组件的端点-->
         <module>xiaohongshu-oss-api</module>
+        <!--真正实现服务的部分-->
         <module>xiaohongshu-oss-biz</module>
     </modules>
 

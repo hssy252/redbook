@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AliyunOSSFileStrategy implements FileStrategy {
 
     @Override
-    public String uploadFile(MultipartFile file, String bucketName) {
+    public String uploadFile(MultipartFile file) {
         log.info("## 上传文件至阿里云 OSS ...");
         return null;
     }

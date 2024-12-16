@@ -17,14 +17,15 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FileServiceImpl implements FileService {
 
+
     @Resource
     private FileStrategy fileStrategy;
 
     @Override
     public Response<?> uploadFile(MultipartFile file) {
         // 上传文件到
-        fileStrategy.uploadFile(file, "xiaohongshu");
+        String url = fileStrategy.uploadFile(file);
 
-        return Response.success();
+        return Response.success(url);
     }
 }

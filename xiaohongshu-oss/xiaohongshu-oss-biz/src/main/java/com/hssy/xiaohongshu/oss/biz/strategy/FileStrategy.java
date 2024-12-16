@@ -17,6 +17,6 @@ public interface FileStrategy {
      * @param bucketName
      * @return
      */
-    String uploadFile(MultipartFile file,String bucketName);
+    String uploadFile(MultipartFile file);
 
 }
