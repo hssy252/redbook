@@ -24,6 +24,8 @@
     <module>xiaohongshu-gateway</module>
     <!--对象存储服务-->
     <module>xiaohongshu-oss</module>
+    <!--用户微服务-->
+    <module>xiaohongshu-user</module>
   </modules>
 
   <properties>
