@@ -2,6 +2,7 @@ package com.hssy.xiaohongshu.user.biz.service.impl;
 
 import com.google.common.base.Preconditions;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
+import com.hssy.framework.commom.exception.BizException;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.ParamUtils;
 import com.hssy.xiaohongshu.oss.api.FileFeignApi;
@@ -10,6 +11,7 @@ import com.hssy.xiaohongshu.user.biz.domain.mapper.UserDOMapper;
 import com.hssy.xiaohongshu.user.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.user.biz.enums.SexEnum;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
+import com.hssy.xiaohongshu.user.biz.rpc.OssRpcService;
 import com.hssy.xiaohongshu.user.biz.service.UserService;
 import jakarta.annotation.Resource;
 import java.time.LocalDate;
@@ -35,7 +37,7 @@ public class UserServiceImpl implements UserService {
     private UserDOMapper userDOMapper;
 
     @Resource
-    private FileFeignApi fileFeignApi;
+    private OssRpcService ossRpcService;
 
     /**
      * 更新用户信息
@@ -56,7 +58,13 @@ public class UserServiceImpl implements UserService {
 
         if (Objects.nonNull(avatarFile)) {
             // 调用对象存储服务上传文件
-            fileFeignApi.test();
+            String response = ossRpcService.uploadFile(avatarFile);
+            log.info("==> 调用 oss 服务成功，上传头像，url：{}", response);
+            if(Objects.isNull(response)){
+                throw new BizException(ResponseCodeEnum.UPLOAD_AVATAR_FAIL);
+            }
+            userDO.setAvatar(response);
+            needUpdate = true;
         }
 
         // 昵称
@@ -102,7 +110,13 @@ public class UserServiceImpl implements UserService {
         MultipartFile backgroundImgFile = updateUserInfoReqVO.getBackgroundImg();
         if (Objects.nonNull(backgroundImgFile)) {
             // 调用对象存储服务上传文件
-            fileFeignApi.test();
+            String response = ossRpcService.uploadFile(backgroundImgFile);
+            log.info("==> 调用 oss 服务成功，上传背景图，url：{}", response);
+            if (Objects.isNull(response)){
+                throw new BizException(ResponseCodeEnum.UPLOAD_BACKGROUND_IMG_FAIL);
+            }
+            userDO.setBackgroundImg(response);
+            needUpdate = true;
         }
 
         if (needUpdate) {
