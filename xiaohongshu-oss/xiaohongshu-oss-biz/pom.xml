@@ -73,6 +73,18 @@
             <artifactId>jaxb-runtime</artifactId>
         </dependency>
 
+        <!--业务日志注解服务-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-spring-boot-starter-biz-operationlog</artifactId>
+        </dependency>
+
+        <!--jackson配置-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-spring-boot-starter-jackson</artifactId>
+        </dependency>
+
 
     </dependencies>
 

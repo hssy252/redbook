@@ -77,6 +77,13 @@
             <artifactId>xiaohongshu-spring-boot-starter-jackson</artifactId>
         </dependency>
 
+        <!--文件上传Feign-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-oss-api</artifactId>
+        </dependency>
+
+
     </dependencies>
 
     <build>

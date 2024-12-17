@@ -252,6 +252,12 @@
         <version>${revision}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.hssy</groupId>
+        <artifactId>xiaohongshu-oss-api</artifactId>
+        <version>${revision}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

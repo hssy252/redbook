@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.ParamUtils;
+import com.hssy.xiaohongshu.oss.api.FileFeignApi;
 import com.hssy.xiaohongshu.user.biz.domain.dataobject.UserDO;
 import com.hssy.xiaohongshu.user.biz.domain.mapper.UserDOMapper;
 import com.hssy.xiaohongshu.user.biz.enums.ResponseCodeEnum;
@@ -33,6 +34,9 @@ public class UserServiceImpl implements UserService {
     @Resource
     private UserDOMapper userDOMapper;
 
+    @Resource
+    private FileFeignApi fileFeignApi;
+
     /**
      * 更新用户信息
      *
@@ -51,7 +55,8 @@ public class UserServiceImpl implements UserService {
         MultipartFile avatarFile = updateUserInfoReqVO.getAvatar();
 
         if (Objects.nonNull(avatarFile)) {
-            // todo: 调用对象存储服务上传文件
+            // 调用对象存储服务上传文件
+            fileFeignApi.test();
         }
 
         // 昵称
@@ -96,7 +101,8 @@ public class UserServiceImpl implements UserService {
         // 背景图
         MultipartFile backgroundImgFile = updateUserInfoReqVO.getBackgroundImg();
         if (Objects.nonNull(backgroundImgFile)) {
-            // todo: 调用对象存储服务上传文件
+            // 调用对象存储服务上传文件
+            fileFeignApi.test();
         }
 
         if (needUpdate) {
