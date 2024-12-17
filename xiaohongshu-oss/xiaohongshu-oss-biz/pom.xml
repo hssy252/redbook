@@ -85,6 +85,12 @@
             <artifactId>xiaohongshu-spring-boot-starter-jackson</artifactId>
         </dependency>
 
+        <!--上下文配置-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-spring-boot-starter-biz-context</artifactId>
+        </dependency>
+
 
     </dependencies>
 
