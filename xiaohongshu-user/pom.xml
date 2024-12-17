@@ -15,7 +15,9 @@
     <description>用户微服务，修改用户信息等</description>
 
     <modules>
+        <!--rpc-->
         <module>xiaohongshu-user-api</module>
+        <!--实际服务-->
         <module>xiaohongshu-user-biz</module>
     </modules>
 

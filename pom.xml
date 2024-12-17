@@ -245,6 +245,13 @@
         <version>${jaxb-runtime.version}</version>
       </dependency>
 
+      <!--用户上下文组件-->
+      <dependency>
+        <groupId>com.hssy</groupId>
+        <artifactId>xiaohongshu-spring-boot-starter-biz-context</artifactId>
+        <version>${revision}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
