@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: xiaohongshu-kv
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        enabled: true
+        namespace: xiaohongshu
+        group: DEFAULT_GROUP

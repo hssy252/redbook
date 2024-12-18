@@ -1,0 +1,6 @@
+spring:
+  profiles:
+    active: dev
+
+server:
+  port: 8084 # 项目启动的端口

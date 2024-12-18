@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.hssy</groupId>
+        <artifactId>xiaohongshu-kv</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>xiaohongshu-kv-api</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>RPC层，提供远程调用</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-common</artifactId>
+        </dependency>
+    </dependencies>
+
+
+
+</project>
