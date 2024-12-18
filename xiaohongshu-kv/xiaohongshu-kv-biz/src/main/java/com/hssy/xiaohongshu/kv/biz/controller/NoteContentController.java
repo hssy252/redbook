@@ -3,6 +3,8 @@ package com.hssy.xiaohongshu.kv.biz.controller;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.kv.biz.service.NoteContentService;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -30,6 +32,11 @@ public class NoteContentController {
     @PostMapping("/note/content/add")
     public Response<?> addNoteContent(@RequestBody @Validated AddNoteContentReqDTO addNoteContentReqDTO){
         return noteContentService.addNoteContent(addNoteContentReqDTO);
+    }
+
+    @PostMapping(value = "/note/content/find")
+    public Response<FindNoteContentRespDTO> findNoteContent(@Validated @RequestBody FindNoteContentReqDTO findNoteContentReqDTO) {
+        return noteContentService.findNoteContent(findNoteContentReqDTO);
     }
 
 }

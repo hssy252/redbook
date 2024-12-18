@@ -1,11 +1,16 @@
 package com.hssy.xiaohongshu.kv.biz.service.impl;
 
+import com.hssy.framework.commom.exception.BizException;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.kv.biz.domain.dataobject.NoteContentDO;
 import com.hssy.xiaohongshu.kv.biz.domain.repository.NoteContentRepository;
+import com.hssy.xiaohongshu.kv.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.kv.biz.service.NoteContentService;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 import jakarta.annotation.Resource;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -35,5 +40,24 @@ public class NoteContentServiceImpl implements NoteContentService {
 
         noteContentRepository.save(noteContentDO);
         return Response.success();
+    }
+
+    @Override
+    public Response<FindNoteContentRespDTO> findNoteContent(FindNoteContentReqDTO findNoteContentReqDTO) {
+        String noteId = findNoteContentReqDTO.getNoteId();
+        Optional<NoteContentDO> note = noteContentRepository.findById(UUID.fromString(noteId));
+
+        if (!note.isPresent()){
+            throw new BizException(ResponseCodeEnum.NOTE_CONTENT_NOT_FOUND);
+        }
+
+        NoteContentDO noteContentDO = note.get();
+
+        FindNoteContentRespDTO respDTO = FindNoteContentRespDTO.builder()
+            .noteId(noteContentDO.getId())
+            .content(noteContentDO.getContent())
+            .build();
+
+        return Response.success(respDTO);
     }
 }

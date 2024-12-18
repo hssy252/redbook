@@ -2,6 +2,8 @@ package com.hssy.xiaohongshu.kv.biz.service;
 
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 
 /**
  * 功能简述
@@ -18,5 +20,12 @@ public interface NoteContentService {
     * @return
     */
    Response<?> addNoteContent(AddNoteContentReqDTO addNoteContentReqDTO);
+
+   /**
+    * 查询笔记内容
+    * @param findNoteContentReqDTO
+    * @return
+    */
+   Response<FindNoteContentRespDTO> findNoteContent(FindNoteContentReqDTO findNoteContentReqDTO);
 
 }

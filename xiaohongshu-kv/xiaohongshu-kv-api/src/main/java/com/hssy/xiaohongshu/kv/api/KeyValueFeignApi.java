@@ -3,6 +3,8 @@ package com.hssy.xiaohongshu.kv.api;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.kv.constants.ApiConstants;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,9 +19,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = ApiConstants.SERVICE_NAME)
 public interface KeyValueFeignApi {
 
-    String PRIFIX = "kv";
+    String PREFIX = "kv";
 
-    @PostMapping(PRIFIX+"/note/content/add")
+    @PostMapping(PREFIX+"/note/content/add")
     Response<?> addNoteContent(@RequestBody AddNoteContentReqDTO addNoteContentReqDTO);
+
+    @PostMapping(value = PREFIX + "/note/content/find")
+    Response<FindNoteContentRespDTO> findNoteContent(@RequestBody FindNoteContentReqDTO findNoteContentReqDTO);
+
 
 }
