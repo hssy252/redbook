@@ -1,6 +1,5 @@
 package com.hssy.xiaohongshu.user.biz.domain.dataobject;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,32 +10,29 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserDO {
+public class PermissionDO {
     private Long id;
 
-    private String xiaohongshuId;
+    private Long parentId;
 
-    private String password;
+    private String name;
 
-    private String nickname;
+    private Byte type;
 
-    private String avatar;
+    private String menuUrl;
 
-    private LocalDate birthday;
+    private String menuIcon;
 
-    private String backgroundImg;
+    private Integer sort;
 
-    private String phone;
+    private String permissionKey;
 
-    private Integer sex;
-
-    private Integer status;
-
-    private String introduction;
+    private Byte status;
 
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;
 
     private Boolean isDeleted;
+
 }

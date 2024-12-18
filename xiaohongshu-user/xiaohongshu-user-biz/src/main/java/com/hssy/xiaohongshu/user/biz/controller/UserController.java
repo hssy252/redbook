@@ -2,6 +2,10 @@ package com.hssy.xiaohongshu.user.biz.controller;
 
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
 import com.hssy.xiaohongshu.user.biz.service.UserService;
 import jakarta.annotation.Resource;
@@ -39,5 +43,25 @@ public class UserController {
     public Response<?> updateUserInfo(@Validated UpdateUserInfoReqVO updateUserInfoReqVO) {
         return userService.updateUserInfo(updateUserInfoReqVO);
     }
+
+    // ===================================== 对其他服务提供的接口 =====================================
+    @PostMapping("/register")
+    @ApiOperationLog(description = "用户注册")
+    public Response<Long> register(@Validated @RequestBody RegisterUserReqDTO registerUserReqDTO) {
+        return userService.register(registerUserReqDTO);
+    }
+
+    @PostMapping("/findByPhone")
+    @ApiOperationLog(description = "手机号查询用户信息")
+    public Response<FindUserByPhoneRspDTO> findByPhone(@Validated @RequestBody FindUserByPhoneReqDTO findUserByPhoneReqDTO) {
+        return userService.findByPhone(findUserByPhoneReqDTO);
+    }
+
+    @PostMapping("/password/update")
+    @ApiOperationLog(description = "密码更新")
+    public Response<?> updatePassword(@Validated @RequestBody UpdateUserPasswordReqDTO updateUserPasswordReqDTO) {
+        return userService.updatePassword(updateUserPasswordReqDTO);
+    }
+
 
 }

@@ -27,17 +27,20 @@
     from t_user
     where id = #{id,jdbcType=BIGINT}
   </select>
+  <select id="selectByPhone" resultType="com.hssy.xiaohongshu.user.biz.domain.dataobject.UserDO">
+    select id,password from t_user where phone = #{phone}
+  </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
     delete from t_user
     where id = #{id,jdbcType=BIGINT}
   </delete>
-  <insert id="insert" parameterType="com.hssy.xiaohongshu.user.biz.domain.dataobject.UserDO">
-    insert into t_user (id, xiaohongshu_id, `password`, 
+  <insert id="insert" parameterType="com.hssy.xiaohongshu.user.biz.domain.dataobject.UserDO" useGeneratedKeys="true" keyProperty="id">
+    insert into t_user (xiaohongshu_id, `password`,
       nickname, avatar, birthday, 
       background_img, phone, sex, 
       `status`, introduction, create_time, 
       update_time, is_deleted)
-    values (#{id,jdbcType=BIGINT}, #{xiaohongshuId,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR}, 
+    values (#{xiaohongshuId,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR},
       #{nickname,jdbcType=VARCHAR}, #{avatar,jdbcType=VARCHAR}, #{birthday,jdbcType=DATE}, 
       #{backgroundImg,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, #{sex,jdbcType=TINYINT}, 
       #{status,jdbcType=TINYINT}, #{introduction,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, 

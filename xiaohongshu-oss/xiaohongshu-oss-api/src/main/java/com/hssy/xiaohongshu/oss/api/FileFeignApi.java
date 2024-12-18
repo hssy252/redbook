@@ -6,6 +6,7 @@ import com.hssy.xiaohongshu.oss.constants.ApiConstants;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,5 +30,4 @@ public interface FileFeignApi {
      */
     @PostMapping(value = PREFIX + "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     Response<?> uploadFile(@RequestPart(value = "file") MultipartFile file);
-
 }

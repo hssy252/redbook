@@ -1,42 +1,30 @@
 package com.hssy.xiaohongshu.user.biz.domain.dataobject;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * @author 13759
+ */
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserDO {
+public class UserRoleDO {
     private Long id;
 
-    private String xiaohongshuId;
+    private Long userId;
 
-    private String password;
-
-    private String nickname;
-
-    private String avatar;
-
-    private LocalDate birthday;
-
-    private String backgroundImg;
-
-    private String phone;
-
-    private Integer sex;
-
-    private Integer status;
-
-    private String introduction;
+    private Long roleId;
 
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;
 
     private Boolean isDeleted;
+
 }
