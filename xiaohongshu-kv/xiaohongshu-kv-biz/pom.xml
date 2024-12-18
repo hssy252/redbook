@@ -47,6 +47,11 @@
             <artifactId>spring-boot-starter-data-cassandra</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-kv-api</artifactId>
+        </dependency>
+
 
     </dependencies>
 </project>
