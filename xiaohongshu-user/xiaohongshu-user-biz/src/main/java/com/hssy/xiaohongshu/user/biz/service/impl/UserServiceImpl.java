@@ -24,6 +24,7 @@ import com.hssy.xiaohongshu.user.biz.domain.mapper.UserRoleDOMapper;
 import com.hssy.xiaohongshu.user.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.user.biz.enums.SexEnum;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
+import com.hssy.xiaohongshu.user.biz.rpc.DistributedIdGeneratorRpcService;
 import com.hssy.xiaohongshu.user.biz.rpc.OssRpcService;
 import com.hssy.xiaohongshu.user.biz.service.UserService;
 import jakarta.annotation.Resource;
@@ -64,6 +65,9 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     private RoleDOMapper roleDOMapper;
+
+    @Resource
+    private DistributedIdGeneratorRpcService distributedIdGeneratorRpcService;
 
 
     /**
@@ -177,9 +181,13 @@ public class UserServiceImpl implements UserService {
 
         // 否则注册新用户
         // 获取全局自增的小哈书 ID
-        Long xiaohongshuId = redisTemplate.opsForValue().increment(RedisKeyConstants.XIAOHONGSHU_ID_GENERATOR_KEY);
+        // Long xiaohongshuId = redisTemplate.opsForValue().increment(RedisKeyConstants.XIAOHONGSHU_ID_GENERATOR_KEY);
+
+        Long xiaohongshuId = Long.valueOf(distributedIdGeneratorRpcService.getXiaohongshuId());
+        Long userId = Long.valueOf(distributedIdGeneratorRpcService.getUserId());
 
         UserDO userDO = UserDO.builder()
+            .id(userId)
             .phone(phone)
             .xiaohongshuId(String.valueOf(xiaohongshuId)) // 自动生成小红书号 ID
             .nickname("小红薯" + xiaohongshuId) // 自动生成昵称, 如：小红薯10000
@@ -193,7 +201,7 @@ public class UserServiceImpl implements UserService {
         userDOMapper.insert(userDO);
 
         // 获取刚刚添加入库的用户 ID
-        Long userId = userDO.getId();
+//        Long userId = userDO.getId();
 
         // 给该用户分配一个默认角色
         UserRoleDO userRoleDO = UserRoleDO.builder()

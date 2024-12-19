@@ -101,6 +101,12 @@
             <artifactId>xiaohongshu-user-api</artifactId>
         </dependency>
 
+        <!--分布式id生成api-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-distributed-id-generator-api</artifactId>
+        </dependency>
+
 
     </dependencies>
 
