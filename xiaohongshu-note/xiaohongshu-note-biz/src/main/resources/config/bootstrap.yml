@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: xiaohongshu-note
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: 127.0.0.1:8848
+        namespace: xiaohongshu
+        group: DEFAULT_GROUP

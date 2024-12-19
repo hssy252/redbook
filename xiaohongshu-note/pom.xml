@@ -1,0 +1,21 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.hssy</groupId>
+        <artifactId>xiaohongshu</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>xiaohongshu-note</artifactId>
+    <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
+    <description>笔记服务</description>
+
+    <modules>
+
+        <module>xiaohongshu-note-api</module>
+        <module>xiaohongshu-note-biz</module>
+    </modules>
+
+</project>
