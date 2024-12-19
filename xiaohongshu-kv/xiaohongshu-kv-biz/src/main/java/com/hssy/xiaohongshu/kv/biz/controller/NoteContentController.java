@@ -40,7 +40,7 @@ public class NoteContentController {
         return noteContentService.findNoteContent(findNoteContentReqDTO);
     }
 
-    @PostMapping("/note/content/find")
+    @PostMapping("/note/content/delete")
     public Response<?> deleteNoteContent(@RequestBody @Validated DeleteNoteContentReqDTO deleteNoteContentReqDTO){
         return noteContentService.deleteNoteContent(deleteNoteContentReqDTO);
     }

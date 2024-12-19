@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: xiaohongshu-distributed-id-generator
+  cloud:
+    nacos:
+      discovery:
+        namespace: xiaohongshu
+        group: DEFAULT_GROUP
+        enabled: true
+        server-addr: 127.0.0.1:8848

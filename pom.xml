@@ -28,6 +28,8 @@
     <module>xiaohongshu-user</module>
     <!-- KV 键值存储服务 -->
     <module>xiaohongshu-kv</module>
+    <!--分布式id生成服务-->
+    <module>xiaohongshu-distributed-id-generator</module>
   </modules>
 
   <properties>
