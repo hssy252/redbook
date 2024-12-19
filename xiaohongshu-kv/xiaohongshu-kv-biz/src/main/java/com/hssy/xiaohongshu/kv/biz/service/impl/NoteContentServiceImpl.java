@@ -7,6 +7,7 @@ import com.hssy.xiaohongshu.kv.biz.domain.repository.NoteContentRepository;
 import com.hssy.xiaohongshu.kv.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.kv.biz.service.NoteContentService;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.DeleteNoteContentReqDTO;
 import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
 import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 import jakarta.annotation.Resource;
@@ -59,5 +60,12 @@ public class NoteContentServiceImpl implements NoteContentService {
             .build();
 
         return Response.success(respDTO);
+    }
+
+    @Override
+    public Response<?> deleteNoteContent(DeleteNoteContentReqDTO deleteNoteContentReqDTO) {
+        String noteId = deleteNoteContentReqDTO.getNoteId();
+        noteContentRepository.deleteById(UUID.fromString(noteId));
+        return Response.success();
     }
 }

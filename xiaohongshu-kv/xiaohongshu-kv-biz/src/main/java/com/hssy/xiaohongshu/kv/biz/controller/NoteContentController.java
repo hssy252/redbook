@@ -3,6 +3,7 @@ package com.hssy.xiaohongshu.kv.biz.controller;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.kv.biz.service.NoteContentService;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.DeleteNoteContentReqDTO;
 import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
 import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 import jakarta.annotation.Resource;
@@ -37,6 +38,11 @@ public class NoteContentController {
     @PostMapping(value = "/note/content/find")
     public Response<FindNoteContentRespDTO> findNoteContent(@Validated @RequestBody FindNoteContentReqDTO findNoteContentReqDTO) {
         return noteContentService.findNoteContent(findNoteContentReqDTO);
+    }
+
+    @PostMapping("/note/content/find")
+    public Response<?> deleteNoteContent(@RequestBody @Validated DeleteNoteContentReqDTO deleteNoteContentReqDTO){
+        return noteContentService.deleteNoteContent(deleteNoteContentReqDTO);
     }
 
 }

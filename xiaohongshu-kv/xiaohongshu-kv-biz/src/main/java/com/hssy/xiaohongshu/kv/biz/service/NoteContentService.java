@@ -2,6 +2,7 @@ package com.hssy.xiaohongshu.kv.biz.service;
 
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.kv.dto.req.AddNoteContentReqDTO;
+import com.hssy.xiaohongshu.kv.dto.req.DeleteNoteContentReqDTO;
 import com.hssy.xiaohongshu.kv.dto.req.FindNoteContentReqDTO;
 import com.hssy.xiaohongshu.kv.dto.resp.FindNoteContentRespDTO;
 
@@ -27,5 +28,12 @@ public interface NoteContentService {
     * @return
     */
    Response<FindNoteContentRespDTO> findNoteContent(FindNoteContentReqDTO findNoteContentReqDTO);
+
+   /**
+    * 删除笔记内容
+    * @param deleteNoteContentReqDTO
+    * @return
+    */
+   Response<?> deleteNoteContent(DeleteNoteContentReqDTO deleteNoteContentReqDTO);
 
 }
