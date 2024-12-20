@@ -1,6 +1,8 @@
 package com.hssy.xiaohongshu.user.biz.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.base.Preconditions;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.enums.DeletedEnum;
@@ -77,6 +79,15 @@ public class UserServiceImpl implements UserService {
 
     @Resource(name = "taskExecutor")
     private ThreadPoolTaskExecutor taskExecutor;
+
+    /**
+     * 用户信息本地缓存
+     */
+    private static final Cache<Long, FindUserByIdRspDTO> LOCAL_CACHE = Caffeine.newBuilder()
+        .initialCapacity(10000) // 设置初始容量为 10000 个条目
+        .maximumSize(10000) // 设置缓存的最大容量为 10000 个条目
+        .expireAfterWrite(1, TimeUnit.HOURS) // 设置缓存条目在写入后 1 小时过期
+        .build();
 
 
     /**
@@ -287,8 +298,15 @@ public class UserServiceImpl implements UserService {
     public Response<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO) {
         Long id = findUserByIdReqDTO.getId();
 
+        // 先从本地缓存中查询
+        FindUserByIdRspDTO findUserByIdRspDTOLocalCache = LOCAL_CACHE.getIfPresent(id);
+        if (Objects.nonNull(findUserByIdRspDTOLocalCache)) {
+            log.info("==> 命中了本地缓存；{}", findUserByIdRspDTOLocalCache);
+            return Response.success(findUserByIdRspDTOLocalCache);
+        }
 
-        // 先去redis缓存查找
+
+        // 再去去redis缓存查找
         String userInfoKey = RedisKeyConstants.buildUserInfoKey(id);
 
         String userInfoString = (String) redisTemplate.opsForValue().get(userInfoKey);
@@ -298,6 +316,11 @@ public class UserServiceImpl implements UserService {
                 return null;
             }
             FindUserByIdRspDTO findUserByIdRspDTO = JsonUtils.parseObject(userInfoKey, FindUserByIdRspDTO.class);
+            // 异步线程中将用户信息存入本地缓存
+            taskExecutor.submit(() -> {
+                    // 写入本地缓存
+                    LOCAL_CACHE.put(id, findUserByIdRspDTO);
+            });
             return Response.success(findUserByIdRspDTO);
         }
 
