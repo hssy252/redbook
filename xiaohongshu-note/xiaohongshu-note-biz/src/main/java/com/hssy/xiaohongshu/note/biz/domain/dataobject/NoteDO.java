@@ -7,15 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * @author 13759
- */
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
 @Builder
 public class NoteDO {
-
     private Long id;
 
     private String title;
@@ -43,5 +39,7 @@ public class NoteDO {
     private LocalDateTime updateTime;
 
     private Integer status;
+
+    private String contentUuid;
 
 }
