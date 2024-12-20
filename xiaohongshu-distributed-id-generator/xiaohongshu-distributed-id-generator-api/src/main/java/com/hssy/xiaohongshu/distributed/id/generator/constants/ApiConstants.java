@@ -9,6 +9,6 @@ package com.hssy.xiaohongshu.distributed.id.generator.constants;
  */
 public interface ApiConstants {
 
-    String SERVICE_NAME = "xiaohashu-distributed-id-generator";
+    String SERVICE_NAME = "xiaohongshu-distributed-id-generator";
 
 }
