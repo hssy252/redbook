@@ -19,8 +19,14 @@ import lombok.NoArgsConstructor;
 @Builder
 public class FindNoteContentRespDTO {
 
-    private UUID noteId;
+    /**
+     * 笔记内容 UUID
+     */
+    private UUID uuid;
 
+    /**
+     * 笔记内容
+     */
     private String content;
 
 }

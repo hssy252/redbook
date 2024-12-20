@@ -23,10 +23,10 @@ import lombok.NonNull;
 @Builder
 public class AddNoteContentReqDTO {
 
-    @NotNull(message = "id不能为空")
-    private Long id;
+    @NotBlank(message = "笔记内容 UUID 不能为空")
+    private String uuid;
 
-    @NotBlank(message = "内容不能为空")
+    @NotBlank(message = "笔记内容不能为空")
     private String content;
 
 }
