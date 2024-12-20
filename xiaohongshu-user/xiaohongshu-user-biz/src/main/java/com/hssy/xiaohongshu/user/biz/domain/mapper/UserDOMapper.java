@@ -1,5 +1,6 @@
 package com.hssy.xiaohongshu.user.biz.domain.mapper;
 
+import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.biz.domain.dataobject.UserDO;
 
 public interface UserDOMapper {
@@ -21,4 +22,6 @@ public interface UserDOMapper {
      * @return
      */
     UserDO selectByPhone(String phone);
+
+    FindUserByIdRspDTO findById(Long id);
 }

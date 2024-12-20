@@ -9,9 +9,11 @@ import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.framework.commom.util.ParamUtils;
 import com.hssy.xiaohongshu.oss.api.FileFeignApi;
+import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.constant.RedisKeyConstants;
 import com.hssy.xiaohongshu.user.biz.constant.RoleConstants;
@@ -273,5 +275,18 @@ public class UserServiceImpl implements UserService {
 
         return Response.success();
     }
-    
+
+    @Override
+    public Response<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO) {
+        Long id = findUserByIdReqDTO.getId();
+
+        FindUserByIdRspDTO findUserByIdRspDTO =  userDOMapper.findById(id);
+
+        if (Objects.isNull(findUserByIdRspDTO)){
+            throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+        }
+
+        return Response.success(findUserByIdRspDTO);
+    }
+
 }
