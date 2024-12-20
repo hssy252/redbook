@@ -84,6 +84,18 @@
             <artifactId>commons-pool2</artifactId>
         </dependency>
 
+        <!--分布式idFeign-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-distributed-id-generator-api</artifactId>
+        </dependency>
+
+        <!--KV存储Feign-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-kv-api</artifactId>
+        </dependency>
+
 
     </dependencies>
 
