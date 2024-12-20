@@ -1,5 +1,6 @@
 package com.hssy.xiaohongshu.user.biz.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
 import com.google.common.base.Preconditions;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.enums.DeletedEnum;
@@ -35,9 +36,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.cache.CacheProperties.Redis;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,6 +74,9 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     private DistributedIdGeneratorRpcService distributedIdGeneratorRpcService;
+
+    @Resource(name = "taskExecutor")
+    private ThreadPoolTaskExecutor taskExecutor;
 
 
     /**
@@ -280,11 +287,42 @@ public class UserServiceImpl implements UserService {
     public Response<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO) {
         Long id = findUserByIdReqDTO.getId();
 
-        FindUserByIdRspDTO findUserByIdRspDTO =  userDOMapper.findById(id);
+
+        // 先去redis缓存查找
+        String userInfoKey = RedisKeyConstants.buildUserInfoKey(id);
+
+        String userInfoString = (String) redisTemplate.opsForValue().get(userInfoKey);
+
+        if (StringUtils.isNotBlank(userInfoString)){
+            if (StringUtils.equals("null",userInfoString)) {
+                return null;
+            }
+            FindUserByIdRspDTO findUserByIdRspDTO = JsonUtils.parseObject(userInfoKey, FindUserByIdRspDTO.class);
+            return Response.success(findUserByIdRspDTO);
+        }
+
+        // redis没有就走数据库
+        FindUserByIdRspDTO  findUserByIdRspDTO =  userDOMapper.findById(id);
 
         if (Objects.isNull(findUserByIdRspDTO)){
+            // 如果为空，就要做缓存穿透的逻辑
+            taskExecutor.execute(()->{
+                // 防止缓存穿透，将空数据存入 Redis 缓存 (过期时间不宜设置过长)
+                // 保底1分钟 + 随机秒数
+                long expireSeconds = 60 + RandomUtil.randomInt(60);
+                redisTemplate.opsForValue().set(userInfoKey, "null", expireSeconds, TimeUnit.SECONDS);
+            });
             throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
         }
+
+        // 非空就要存入redis里
+        // 异步将用户信息存入 Redis 缓存，提升响应速度
+        taskExecutor.submit(() -> {
+            // 过期时间（保底1天 + 随机秒数，将缓存过期时间打散，防止同一时间大量缓存失效，导致数据库压力太大）
+            long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+            redisTemplate.opsForValue()
+                .set(userInfoKey, JsonUtils.toJsonString(findUserByIdRspDTO), expireSeconds, TimeUnit.SECONDS);
+        });
 
         return Response.success(findUserByIdRspDTO);
     }

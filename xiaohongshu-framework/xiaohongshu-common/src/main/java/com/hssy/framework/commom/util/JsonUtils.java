@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 
 public class JsonUtils {
 
@@ -41,6 +42,23 @@ public class JsonUtils {
     @SneakyThrows
     public static String toJsonString(Object obj) {
        return OBJECT_MAPPER.writeValueAsString(obj);
+    }
+
+    /**
+     * 将 JSON 字符串转换为对象
+     *
+     * @param jsonStr
+     * @param clazz
+     * @return
+     * @param <T>
+     */
+    @SneakyThrows
+    public static <T> T parseObject(String jsonStr, Class<T> clazz) {
+        if (StringUtils.isBlank(jsonStr)) {
+            return null;
+        }
+
+        return OBJECT_MAPPER.readValue(jsonStr, clazz);
     }
 
 }
