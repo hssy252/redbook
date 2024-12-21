@@ -4,6 +4,7 @@ import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
 
 /**
  * 功能简述
@@ -27,5 +28,13 @@ public interface NoteService {
      * @return
      */
     Response<FindNoteDetailRspVO> findNoteDetail(FindNoteDetailReqVO findNoteDetailReqVO);
+
+
+    /**
+     * 笔记更新
+     * @param updateNoteReqVO
+     * @return
+     */
+    Response<?> updateNote(UpdateNoteReqVO updateNoteReqVO);
 
 }
