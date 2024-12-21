@@ -31,7 +31,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -180,6 +182,7 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
+    @SneakyThrows
     public Response<FindNoteDetailRspVO> findNoteDetail(FindNoteDetailReqVO findNoteDetailReqVO) {
         // 当前登录用户
         Long userId = LoginUserContextHolder.getUserId();
@@ -237,44 +240,62 @@ public class NoteServiceImpl implements NoteService {
         checkNoteVisible(visible, userId, noteDO.getCreatorId());
 
         // RPC: 调用用户服务
+        // 并发优化查询
         Long creatorId = noteDO.getCreatorId();
-        FindUserByIdRspDTO findUserByIdRspDTO = userRpcService.findUserInfoById(creatorId);
-
+        CompletableFuture<FindUserByIdRspDTO> userInfoFuture = CompletableFuture.supplyAsync(() -> {
+             return userRpcService.findUserInfoById(creatorId);
+        }, threadPoolTaskExecutor);
 
         // RPC: 调用 K-V 存储服务获取内容
-        String content = null;
+        // 并发优化查询
+        CompletableFuture<String> contentResultFuture = CompletableFuture.completedFuture(null);
         if (Objects.equals(noteDO.getIsContentEmpty(), Boolean.FALSE)) {
-            content = keyValueRpcService.findNoteContentById(noteDO.getContentUuid());
+            contentResultFuture = CompletableFuture
+                .supplyAsync(() -> keyValueRpcService.findNoteContentById(noteDO.getContentUuid()), threadPoolTaskExecutor);
         }
 
-        // 笔记类型
-        Integer noteType = noteDO.getType();
-        // 图文笔记图片链接(字符串)
-        String imgUrisStr = noteDO.getImgUris();
-        // 图文笔记图片链接(集合)
-        List<String> imgUris = null;
-        // 如果查询的是图文笔记，需要将图片链接的逗号分隔开，转换成集合
-        if (Objects.equals(noteType, NoteTypeEnum.IMAGE_TEXT.getCode())
-            && StringUtils.isNotBlank(imgUrisStr)) {
-            imgUris = List.of(imgUrisStr.split(","));
-        }
+        CompletableFuture<String> finalContentResultFuture = contentResultFuture;
+        CompletableFuture<FindNoteDetailRspVO> resultFuture = CompletableFuture
+            .allOf(userInfoFuture, contentResultFuture)
+            .thenApply(s -> {
+                // 获取 Future 返回的结果
+                FindUserByIdRspDTO findUserByIdRspDTO = userInfoFuture.join();
+                String content = finalContentResultFuture.join();
 
-        // 构建返参 VO 实体类
-        FindNoteDetailRspVO findNoteDetailRspVO = FindNoteDetailRspVO.builder()
-            .id(noteDO.getId())
-            .type(noteDO.getType())
-            .title(noteDO.getTitle())
-            .content(content)
-            .imgUris(imgUris)
-            .topicId(noteDO.getTopicId())
-            .topicName(noteDO.getTopicName())
-            .creatorId(noteDO.getCreatorId())
-            .creatorName(findUserByIdRspDTO.getNickName())
-            .avatar(findUserByIdRspDTO.getAvatar())
-            .videoUri(noteDO.getVideoUri())
-            .updateTime(noteDO.getUpdateTime())
-            .visible(noteDO.getVisible())
-            .build();
+                // 笔记类型
+                Integer noteType = noteDO.getType();
+                // 图文笔记图片链接(字符串)
+                String imgUrisStr = noteDO.getImgUris();
+                // 图文笔记图片链接(集合)
+                List<String> imgUris = null;
+                // 如果查询的是图文笔记，需要将图片链接的逗号分隔开，转换成集合
+                if (Objects.equals(noteType, NoteTypeEnum.IMAGE_TEXT.getCode())
+                    && StringUtils.isNotBlank(imgUrisStr)) {
+                    imgUris = List.of(imgUrisStr.split(","));
+                }
+
+                // 构建返参 VO 实体类
+                return FindNoteDetailRspVO.builder()
+                    .id(noteDO.getId())
+                    .type(noteDO.getType())
+                    .title(noteDO.getTitle())
+                    .content(content)
+                    .imgUris(imgUris)
+                    .topicId(noteDO.getTopicId())
+                    .topicName(noteDO.getTopicName())
+                    .creatorId(userId)
+                    .creatorName(findUserByIdRspDTO.getNickName())
+                    .avatar(findUserByIdRspDTO.getAvatar())
+                    .videoUri(noteDO.getVideoUri())
+                    .updateTime(noteDO.getUpdateTime())
+                    .visible(noteDO.getVisible())
+                    .build();
+
+            });
+
+        // 获取拼装后的 FindNoteDetailRspVO
+        FindNoteDetailRspVO findNoteDetailRspVO = resultFuture.get();
+
 
         // 将结果缓存到redis当中
         threadPoolTaskExecutor.submit(()->{
