@@ -96,6 +96,12 @@
             <artifactId>xiaohongshu-kv-api</artifactId>
         </dependency>
 
+        <!--用户服务Feign-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-user-api</artifactId>
+        </dependency>
+
 
     </dependencies>
 

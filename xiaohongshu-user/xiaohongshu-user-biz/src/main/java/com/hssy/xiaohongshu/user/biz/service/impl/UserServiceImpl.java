@@ -315,7 +315,7 @@ public class UserServiceImpl implements UserService {
             if (StringUtils.equals("null",userInfoString)) {
                 return null;
             }
-            FindUserByIdRspDTO findUserByIdRspDTO = JsonUtils.parseObject(userInfoKey, FindUserByIdRspDTO.class);
+            FindUserByIdRspDTO findUserByIdRspDTO = JsonUtils.parseObject(userInfoString, FindUserByIdRspDTO.class);
             // 异步线程中将用户信息存入本地缓存
             taskExecutor.submit(() -> {
                     // 写入本地缓存
