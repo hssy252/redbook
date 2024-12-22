@@ -37,4 +37,10 @@ public interface NoteService {
      */
     Response<?> updateNote(UpdateNoteReqVO updateNoteReqVO);
 
+    /**
+     * 删除本地笔记缓存
+     * @param noteId
+     */
+    void deleteNoteLocalCache(Long noteId);
+
 }
