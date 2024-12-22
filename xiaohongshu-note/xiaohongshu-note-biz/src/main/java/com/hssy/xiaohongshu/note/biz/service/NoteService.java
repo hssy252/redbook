@@ -5,6 +5,7 @@ import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.TopNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteVisibleOnlyMeReqVO;
 
@@ -53,5 +54,12 @@ public interface NoteService {
      * @return
      */
     Response<?> visibleOnlyMe(UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO);
+
+    /**
+     * 笔记置顶 / 取消置顶
+     * @param topNoteReqVO
+     * @return
+     */
+    Response<?> topNote(TopNoteReqVO topNoteReqVO);
 
 }
