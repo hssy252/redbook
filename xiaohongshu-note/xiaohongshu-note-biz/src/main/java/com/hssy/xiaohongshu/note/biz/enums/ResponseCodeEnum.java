@@ -22,7 +22,9 @@ public enum ResponseCodeEnum implements BaseExceptionInterface {
     NOTE_NOT_FOUND("NOTE-20002", "笔记不存在"),
     NOTE_PRIVATE("NOTE-20003", "作者已将该笔记设置为仅自己可见"),
     NOTE_UPDATE_FAIL("NOTE-20004", "笔记更新失败"),
-    TOPIC_NOT_FOUND("NOTE-2005","话题不存在" );
+    TOPIC_NOT_FOUND("NOTE-2005","话题不存在" ),
+    NOTE_CANT_VISIBLE_ONLY_ME("NOTE-20006", "此笔记无法修改为仅自己可见"),
+    ;
 
     // 异常码
     private final String errorCode;

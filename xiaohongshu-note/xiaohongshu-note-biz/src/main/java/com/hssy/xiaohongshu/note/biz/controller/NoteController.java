@@ -7,6 +7,7 @@ import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteVisibleOnlyMeReqVO;
 import com.hssy.xiaohongshu.note.biz.service.NoteService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,12 @@ public class NoteController {
     @ApiOperationLog(description = "删除笔记")
     public Response<?> deleteNote(@Validated @RequestBody DeleteNoteReqVO deleteNoteReqVO) {
         return noteService.deleteNote(deleteNoteReqVO);
+    }
+
+    @PostMapping(value = "/visible/onlyme")
+    @ApiOperationLog(description = "笔记仅对自己可见")
+    public Response<?> visibleOnlyMe(@Validated @RequestBody UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO) {
+        return noteService.visibleOnlyMe(updateNoteVisibleOnlyMeReqVO);
     }
 
 }

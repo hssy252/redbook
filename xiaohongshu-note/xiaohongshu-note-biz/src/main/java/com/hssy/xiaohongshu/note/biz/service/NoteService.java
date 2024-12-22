@@ -6,6 +6,7 @@ import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteVisibleOnlyMeReqVO;
 
 /**
  * 功能简述
@@ -45,5 +46,12 @@ public interface NoteService {
     void deleteNoteLocalCache(Long noteId);
 
     Response<?> deleteNote(DeleteNoteReqVO deleteNoteReqVO);
+
+    /**
+     * 笔记仅对自己可见
+     * @param updateNoteVisibleOnlyMeReqVO
+     * @return
+     */
+    Response<?> visibleOnlyMe(UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO);
 
 }

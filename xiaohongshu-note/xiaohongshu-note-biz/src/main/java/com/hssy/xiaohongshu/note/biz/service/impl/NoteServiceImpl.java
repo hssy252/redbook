@@ -24,6 +24,7 @@ import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteVisibleOnlyMeReqVO;
 import com.hssy.xiaohongshu.note.biz.rpc.DistributedIdGeneratorRpcService;
 import com.hssy.xiaohongshu.note.biz.rpc.KeyValueRpcService;
 import com.hssy.xiaohongshu.note.biz.rpc.UserRpcService;
@@ -458,6 +459,34 @@ public class NoteServiceImpl implements NoteService {
         // 同步发送广播模式 MQ，将所有实例中的本地缓存都删除掉
         rocketMQTemplate.syncSend(MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE, noteId);
         log.info("====> MQ：删除笔记本地缓存发送成功...");
+
+        return Response.success();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Response<?> visibleOnlyMe(UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO) {
+        Long noteId = updateNoteVisibleOnlyMeReqVO.getId();
+
+        // 构建更新 DO 实体类
+        NoteDO noteDO = NoteDO.builder()
+            .id(noteId)
+            .visible(NoteVisibleEnum.PRIVATE.getCode()) // 可见性设置为仅对自己可见
+            .updateTime(LocalDateTime.now())
+            .build();
+
+        int count = noteDOMapper.updateVisibleOnlyMe(noteDO);
+        if (count==0){
+            throw new BizException(ResponseCodeEnum.NOTE_CANT_VISIBLE_ONLY_ME);
+        }
+
+        // 删除redis缓存
+        String key = RedisKeyConstants.buildNoteDetailKey(noteId);
+        redisTemplate.delete(key);
+
+        // 删除本地缓存
+        rocketMQTemplate.syncSend(MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE,noteId);
+        log.info("发送消息到mq，笔记Id为：{}",noteId);
 
         return Response.success();
     }
