@@ -2,6 +2,7 @@ package com.hssy.xiaohongshu.note.biz.controller;
 
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
@@ -44,4 +45,11 @@ public class NoteController {
     public Response<?> updateNote(@Validated @RequestBody UpdateNoteReqVO updateNoteReqVO) {
         return noteService.updateNote(updateNoteReqVO);
     }
+
+    @PostMapping(value = "/delete")
+    @ApiOperationLog(description = "删除笔记")
+    public Response<?> deleteNote(@Validated @RequestBody DeleteNoteReqVO deleteNoteReqVO) {
+        return noteService.deleteNote(deleteNoteReqVO);
+    }
+
 }
