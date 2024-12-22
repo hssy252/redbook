@@ -30,7 +30,10 @@
     <module>xiaohongshu-kv</module>
     <!--分布式id生成服务-->
     <module>xiaohongshu-distributed-id-generator</module>
+    <!--笔记服务-->
     <module>xiaohongshu-note</module>
+    <!--用户关系服务-->
+    <module>xiaohongshu-user-relation</module>
   </modules>
 
   <properties>
