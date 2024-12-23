@@ -1,5 +1,6 @@
 package com.hssy.xiaohongshu.user.relation.biz.consumer;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.xiaohongshu.user.relation.biz.constants.MQConstants;
 import com.hssy.xiaohongshu.user.relation.biz.domain.dataobject.FansDO;
@@ -39,9 +40,18 @@ public class FollowUnFollowConsumer implements RocketMQListener<Message> {
     @Resource
     private TransactionTemplate transactionTemplate;
 
+    // 每秒创建5000个令牌
+    @Resource
+    private RateLimiter rateLimiter;
+
+    //  省略...
+
 
     @Override
     public void onMessage(Message message) {
+        // 流量削峰：通过获取令牌，如果没有令牌可用，将阻塞，直到获得
+        rateLimiter.acquire();
+
         // 获得消息体
         String bodyJsonStr = new String(message.getBody());
 
