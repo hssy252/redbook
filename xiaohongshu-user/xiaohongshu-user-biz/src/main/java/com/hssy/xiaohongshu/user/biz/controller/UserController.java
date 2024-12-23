@@ -6,6 +6,7 @@ import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
@@ -69,6 +70,11 @@ public class UserController {
     @ApiOperationLog(description = "根据id查询用户")
     public Response<FindUserByIdRspDTO> findUserById(@Validated @RequestBody FindUserByIdReqDTO findUserByIdReqDTO){
         return userService.findById(findUserByIdReqDTO);
+    }
+
+    @PostMapping("/exist")
+    public Response<Boolean> userExistOrNot(@Validated @RequestBody UserExistReqDTO userExistReqDTO){
+        return userService.userExistOrNot(userExistReqDTO);
     }
 
 

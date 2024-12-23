@@ -6,6 +6,7 @@ import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -54,4 +55,7 @@ public interface UserFeignApi {
 
     @PostMapping(value = PREFIX + "/findById")
     Response<FindUserByIdRspDTO> findUserById(@RequestBody FindUserByIdReqDTO findUserByIdReqDTO);
+
+    @PostMapping(value = PREFIX + "/exist")
+    Response<Boolean> userExistOrNot(@RequestBody UserExistReqDTO userExistReqDTO);
 }

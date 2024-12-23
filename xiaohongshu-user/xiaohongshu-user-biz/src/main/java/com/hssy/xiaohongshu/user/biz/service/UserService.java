@@ -5,6 +5,7 @@ import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
@@ -55,4 +56,6 @@ public interface UserService {
      * @return
      */
     Response<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO);
+
+    Response<Boolean> userExistOrNot(UserExistReqDTO userExistReqDTO);
 }

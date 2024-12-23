@@ -13,6 +13,9 @@ public enum ResponseCodeEnum implements BaseExceptionInterface {
     PARAM_NOT_VALID("RELATION-10001", "参数错误"),
 
     // ----------- 业务异常状态码 -----------
+    CANT_FOLLOW_YOURSELF("RELATION-20000","您不能关注您自己"),
+    FOLLOW_USER_NOT_EXIST("RELATION-20001","被关注的用户不存在"),
+    FOLLOW_USER_EXCEED_MAX_COUNT("RELATION-20002","关注的用户超过上限")
     ;
 
     // 异常码

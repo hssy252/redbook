@@ -86,6 +86,18 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!-- Rocket MQ -->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!--用户服务Feign-->
+        <dependency>
+            <groupId>com.hssy</groupId>
+            <artifactId>xiaohongshu-user-api</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

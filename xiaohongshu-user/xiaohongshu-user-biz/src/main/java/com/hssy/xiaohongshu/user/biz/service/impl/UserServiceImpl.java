@@ -16,6 +16,7 @@ import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.constant.RedisKeyConstants;
@@ -348,6 +349,17 @@ public class UserServiceImpl implements UserService {
         });
 
         return Response.success(findUserByIdRspDTO);
+    }
+
+    @Override
+    public Response<Boolean> userExistOrNot(UserExistReqDTO userExistReqDTO) {
+        Long userId = userExistReqDTO.getUserId();
+        UserDO userDO = userDOMapper.selectByPrimaryKey(userId);
+        if (Objects.isNull(userDO)){
+            return Response.success(Boolean.FALSE);
+        }
+
+        return Response.success(Boolean.TRUE);
     }
 
 }
