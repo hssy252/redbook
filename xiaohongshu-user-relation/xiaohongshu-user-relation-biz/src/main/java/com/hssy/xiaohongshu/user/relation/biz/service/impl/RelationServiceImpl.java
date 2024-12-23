@@ -3,10 +3,12 @@ package com.hssy.xiaohongshu.user.relation.biz.service.impl;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.exception.BizException;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.framework.commom.util.DateUtils;
 import com.hssy.xiaohongshu.user.api.api.UserFeignApi;
 import com.hssy.xiaohongshu.user.relation.biz.constants.FollowConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.MQConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.RedisKeyConstants;
+import com.hssy.xiaohongshu.user.relation.biz.enums.LuaResultEnum;
 import com.hssy.xiaohongshu.user.relation.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.rpc.UserRpcService;
@@ -17,7 +19,10 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Objects;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Service;
 
 /**
@@ -59,21 +64,37 @@ public class RelationServiceImpl implements RelationService {
 
         // 用户关注数量是否达到上限,查询redis里的zset结构
         String followKey = RedisKeyConstants.buildFollowingUserKey(userId);
-        // 得到该用户关注了多少人
-        Long followCount = redisTemplate.opsForZSet().zCard(followKey);
-        if (Objects.isNull(followCount)){
-            throw new BizException(ResponseCodeEnum.PARAM_NOT_VALID);
+
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        // Lua 脚本路径
+        script.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/follow_check_and_add.lua")));
+        // 返回值类型
+        script.setResultType(Long.class);
+
+        // 获取当前时间戳
+        long timestamp = DateUtils.localDateTime2Timestamp(LocalDateTime.now());
+
+        Long result = redisTemplate.execute(script, Collections.singletonList(followKey), followUserId, timestamp);
+
+        LuaResultEnum luaResultEnum = LuaResultEnum.valueOf(result);
+
+        if (Objects.isNull(luaResultEnum)) {
+            throw new RuntimeException("Lua 返回结果错误");
         }
-        if (followCount > FollowConstants.MAX_FOLLOW_USER_COUNT){
-            throw new  BizException(ResponseCodeEnum.FOLLOW_USER_EXCEED_MAX_COUNT);
+
+        // 判断返回结果
+        switch (luaResultEnum) {
+            // 关注数已达到上限
+            case FOLLOW_LIMIT -> throw new BizException(ResponseCodeEnum.FOLLOW_USER_EXCEED_MAX_COUNT);
+            // 已经关注了该用户
+            case ALREADY_FOLLOWED -> throw new BizException(ResponseCodeEnum.ALREADY_FOLLOWED);
+            // ZSet 关注列表不存在
+            case ZSET_NOT_EXIST -> {
+                // TODO
+
+            }
         }
-        // 向redis添加关注和粉丝的记录
-        // 构建被关注用户的粉丝key
-        String fansKey = RedisKeyConstants.buildFansUserKey(followUserId);
-        // 添加用户的关注信息： following:userId time followedUserId
-        redisTemplate.opsForZSet().add(followKey,followUserId,LocalDateTime.now().atZone(ZoneId.of("Asia/Shanghai")).toEpochSecond());
-        // 添加被关注用户的粉丝信息
-        redisTemplate.opsForZSet().add(fansKey,userId,LocalDateTime.now().atZone(ZoneId.of("Asia/Shanghai")).toEpochSecond());
+
 
         // 然后通过MQ发消息，实现数据库异步入库（减轻数据库压力，削峰填谷
         rocketMQTemplate.syncSend(MQConstants.FOLLOW_USER_TOPIC, Collections.emptyMap());
