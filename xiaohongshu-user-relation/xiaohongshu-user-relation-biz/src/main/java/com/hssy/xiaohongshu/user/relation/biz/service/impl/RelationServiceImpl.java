@@ -98,8 +98,13 @@ public class RelationServiceImpl implements RelationService {
 
             // 若记录为空，直接 ZADD 对象, 并设置过期时间
             if (CollUtil.isEmpty(followingDOS)) {
-                // 省略...
+                DefaultRedisScript<Long> script2 = new DefaultRedisScript<>();
+                script2.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/follow_add_and_expire.lua")));
+                script2.setResultType(Long.class);
 
+                // TODO: 可以根据用户类型，设置不同的过期时间，若当前用户为大V, 则可以过期时间设置的长些或者不设置过期时间；如不是，则设置的短些
+                // 如何判断呢？可以从计数服务获取用户的粉丝数，目前计数服务还没创建，则暂时采用统一的过期策略
+                redisTemplate.execute(script2, Collections.singletonList(followKey), followUserId, timestamp, expireSeconds);
             } else { // 若记录不为空，则将关注关系数据全量同步到 Redis 中，并设置过期时间；
                 // 构建 Lua 参数
                 Object[] luaArgs = buildLuaArgs(followingDOS, expireSeconds);
