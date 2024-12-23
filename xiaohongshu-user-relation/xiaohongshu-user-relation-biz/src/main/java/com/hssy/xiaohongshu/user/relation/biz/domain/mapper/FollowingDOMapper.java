@@ -1,6 +1,7 @@
 package com.hssy.xiaohongshu.user.relation.biz.domain.mapper;
 
 import com.hssy.xiaohongshu.user.relation.biz.domain.dataobject.FollowingDO;
+import java.util.List;
 
 public interface FollowingDOMapper {
     int deleteByPrimaryKey(Long id);
@@ -14,4 +15,6 @@ public interface FollowingDOMapper {
     int updateByPrimaryKeySelective(FollowingDO record);
 
     int updateByPrimaryKey(FollowingDO record);
+
+    List<FollowingDO> selectByUserId(Long userId);
 }

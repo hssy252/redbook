@@ -1,5 +1,7 @@
 package com.hssy.xiaohongshu.user.relation.biz.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.exception.BizException;
 import com.hssy.framework.commom.response.Response;
@@ -8,6 +10,8 @@ import com.hssy.xiaohongshu.user.api.api.UserFeignApi;
 import com.hssy.xiaohongshu.user.relation.biz.constants.FollowConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.MQConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.RedisKeyConstants;
+import com.hssy.xiaohongshu.user.relation.biz.domain.dataobject.FollowingDO;
+import com.hssy.xiaohongshu.user.relation.biz.domain.mapper.FollowingDOMapper;
 import com.hssy.xiaohongshu.user.relation.biz.enums.LuaResultEnum;
 import com.hssy.xiaohongshu.user.relation.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
@@ -17,6 +21,7 @@ import jakarta.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.core.io.ClassPathResource;
@@ -43,6 +48,9 @@ public class RelationServiceImpl implements RelationService {
 
     @Resource
     private UserRpcService userRpcService;
+
+    @Resource
+    private FollowingDOMapper followingDOMapper;
 
     @Override
     public Response<?> followUser(FollowUserReqVO followUserReqVO) {
@@ -76,29 +84,81 @@ public class RelationServiceImpl implements RelationService {
 
         Long result = redisTemplate.execute(script, Collections.singletonList(followKey), followUserId, timestamp);
 
-        LuaResultEnum luaResultEnum = LuaResultEnum.valueOf(result);
+        // 校验 Lua 脚本执行结果
+        checkLuaScriptResult(result);
 
-        if (Objects.isNull(luaResultEnum)) {
-            throw new RuntimeException("Lua 返回结果错误");
-        }
+        // ZSET 不存在
+        if (Objects.equals(result, LuaResultEnum.ZSET_NOT_EXIST.getCode())) {
+            // 从数据库查询当前用户的关注关系记录
+            List<FollowingDO> followingDOS = followingDOMapper.selectByUserId(userId);
 
-        // 判断返回结果
-        switch (luaResultEnum) {
-            // 关注数已达到上限
-            case FOLLOW_LIMIT -> throw new BizException(ResponseCodeEnum.FOLLOW_USER_EXCEED_MAX_COUNT);
-            // 已经关注了该用户
-            case ALREADY_FOLLOWED -> throw new BizException(ResponseCodeEnum.ALREADY_FOLLOWED);
-            // ZSet 关注列表不存在
-            case ZSET_NOT_EXIST -> {
-                // TODO
+            // 随机过期时间
+            // 保底1天+随机秒数
+            long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
 
+            // 若记录为空，直接 ZADD 对象, 并设置过期时间
+            if (CollUtil.isEmpty(followingDOS)) {
+                // 省略...
+
+            } else { // 若记录不为空，则将关注关系数据全量同步到 Redis 中，并设置过期时间；
+                // 构建 Lua 参数
+                Object[] luaArgs = buildLuaArgs(followingDOS, expireSeconds);
+
+                // 执行 Lua 脚本，批量同步关注关系数据到 Redis 中
+                DefaultRedisScript<Long> script3 = new DefaultRedisScript<>();
+                script3.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/follow_batch_add_and_expire.lua")));
+                script3.setResultType(Long.class);
+                redisTemplate.execute(script3, Collections.singletonList(followKey), luaArgs);
+
+                // 再次调用上面的 Lua 脚本：follow_check_and_add.lua , 将最新的关注关系添加进去
+                result = redisTemplate.execute(script, Collections.singletonList(followKey), followUserId, timestamp);
+                checkLuaScriptResult(result);
             }
         }
-
 
         // 然后通过MQ发消息，实现数据库异步入库（减轻数据库压力，削峰填谷
         rocketMQTemplate.syncSend(MQConstants.FOLLOW_USER_TOPIC, Collections.emptyMap());
 
         return Response.success();
+    }
+
+
+    /**
+     * 校验 Lua 脚本结果，根据状态码抛出对应的业务异常
+     * @param result
+     */
+    private static void checkLuaScriptResult(Long result) {
+        LuaResultEnum luaResultEnum = LuaResultEnum.valueOf(result);
+
+        if (Objects.isNull(luaResultEnum)) throw new RuntimeException("Lua 返回结果错误");
+        // 校验 Lua 脚本执行结果
+        switch (luaResultEnum) {
+            // 关注数已达到上限
+            case FOLLOW_LIMIT -> throw new BizException(ResponseCodeEnum.FOLLOW_USER_EXCEED_MAX_COUNT);
+            // 已经关注了该用户
+            case ALREADY_FOLLOWED -> throw new BizException(ResponseCodeEnum.ALREADY_FOLLOWED);
+        }
+    }
+
+    /**
+     * 构建 Lua 脚本参数
+     *
+     * @param followingDOS
+     * @param expireSeconds
+     * @return
+     */
+    private static Object[] buildLuaArgs(List<FollowingDO> followingDOS, long expireSeconds) {
+        int argsLength = followingDOS.size() * 2 + 1; // 每个关注关系有 2 个参数（score 和 value），再加一个过期时间
+        Object[] luaArgs = new Object[argsLength];
+
+        int i = 0;
+        for (FollowingDO following : followingDOS) {
+            luaArgs[i] = DateUtils.localDateTime2Timestamp(following.getCreateTime()); // 关注时间作为 score
+            luaArgs[i + 1] = following.getFollowingUserId();          // 关注的用户 ID 作为 ZSet value
+            i += 2;
+        }
+
+        luaArgs[argsLength - 1] = expireSeconds; // 最后一个参数是 ZSet 的过期时间
+        return luaArgs;
     }
 }
