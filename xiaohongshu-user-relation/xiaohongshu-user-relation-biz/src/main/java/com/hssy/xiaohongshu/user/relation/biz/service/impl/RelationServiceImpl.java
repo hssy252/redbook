@@ -6,6 +6,7 @@ import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.exception.BizException;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.DateUtils;
+import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.xiaohongshu.user.api.api.UserFeignApi;
 import com.hssy.xiaohongshu.user.relation.biz.constants.FollowConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.MQConstants;
@@ -14,6 +15,7 @@ import com.hssy.xiaohongshu.user.relation.biz.domain.dataobject.FollowingDO;
 import com.hssy.xiaohongshu.user.relation.biz.domain.mapper.FollowingDOMapper;
 import com.hssy.xiaohongshu.user.relation.biz.enums.LuaResultEnum;
 import com.hssy.xiaohongshu.user.relation.biz.enums.ResponseCodeEnum;
+import com.hssy.xiaohongshu.user.relation.biz.model.dto.FollowUserMqDTO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.rpc.UserRpcService;
 import com.hssy.xiaohongshu.user.relation.biz.service.RelationService;
@@ -23,10 +25,15 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +45,7 @@ import org.springframework.stereotype.Service;
  * @since 2024/12/22 18:55
  */
 @Service
+@Slf4j
 public class RelationServiceImpl implements RelationService {
 
     @Resource
@@ -80,7 +88,8 @@ public class RelationServiceImpl implements RelationService {
         script.setResultType(Long.class);
 
         // 获取当前时间戳
-        long timestamp = DateUtils.localDateTime2Timestamp(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        long timestamp = DateUtils.localDateTime2Timestamp(now);
 
         Long result = redisTemplate.execute(script, Collections.singletonList(followKey), followUserId, timestamp);
 
@@ -122,7 +131,32 @@ public class RelationServiceImpl implements RelationService {
         }
 
         // 然后通过MQ发消息，实现数据库异步入库（减轻数据库压力，削峰填谷
-        rocketMQTemplate.syncSend(MQConstants.FOLLOW_USER_TOPIC, Collections.emptyMap());
+        FollowUserMqDTO mqDTO = FollowUserMqDTO.builder()
+            .userId(userId)
+            .followUserId(followUserId)
+            .createTime(now)
+            .build();
+
+        // 构建消息对象
+        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(mqDTO)).build();
+
+        // 构建Topic和Tag
+        String destination = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW + ":" + MQConstants.TAG_FOLLOW;
+
+        log.info("开始发送消息实体: {}",mqDTO);
+
+        // 异步发送MQ消息
+        rocketMQTemplate.asyncSend(destination, message, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+                log.info("MQ消息发送成功，发送结果：{}",sendResult);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                log.error("MQ消息发送失败，发送结果：",throwable);
+            }
+        });
 
         return Response.success();
     }

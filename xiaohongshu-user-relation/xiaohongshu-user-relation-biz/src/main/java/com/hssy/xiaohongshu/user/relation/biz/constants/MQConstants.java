@@ -7,8 +7,21 @@ package com.hssy.xiaohongshu.user.relation.biz.constants;
  * @version 1.0
  * @since 2024/12/22 19:01
  */
-public class MQConstants {
+public interface MQConstants {
 
-    public static final String FOLLOW_USER_TOPIC = "FollowUserTopic";
+    /**
+     * Topic: 关注、取关共用一个
+     */
+    String TOPIC_FOLLOW_OR_UNFOLLOW = "FollowUnfollowTopic";
+
+    /**
+     * 关注标签
+     */
+    String TAG_FOLLOW = "Follow";
+
+    /**
+     * 取关标签
+     */
+    String TAG_UNFOLLOW = "Unfollow";
 
 }
