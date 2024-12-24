@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.boot.autoconfigure.cache.CacheProperties.Redis;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -445,7 +446,25 @@ public class UserServiceImpl implements UserService {
                 .introduction(userDO.getIntroduction())
                 .build()).toList();
 
-            // TODO 将数据库中查到的数据异步存入redis中
+            // 将数据库中查到的数据异步存入redis中
+            List<FindUserByIdRspDTO> finalFindUserByIdRspDTOs = list;
+            taskExecutor.submit(()->{
+                // 执行pipeline操作
+                redisTemplate.executePipelined((RedisCallback<Void>) connection -> {
+                    finalFindUserByIdRspDTOs.forEach(dto->{
+                        Long id = dto.getId();
+
+                        // 构建redis的缓存key和value
+                        String key = RedisKeyConstants.buildUserInfoKey(id);
+                        String jsonStr = JsonUtils.toJsonString(dto);
+
+                        // 设置随机缓存过期时间
+                        long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+                        redisTemplate.opsForValue().set(key,jsonStr,expireSeconds,TimeUnit.SECONDS);
+                    });
+                return null;
+                });
+            });
         }
 
         // 汇总结果
