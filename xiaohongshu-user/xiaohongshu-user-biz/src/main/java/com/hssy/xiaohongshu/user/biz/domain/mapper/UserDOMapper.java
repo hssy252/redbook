@@ -2,6 +2,8 @@ package com.hssy.xiaohongshu.user.biz.domain.mapper;
 
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.biz.domain.dataobject.UserDO;
+import java.util.List;
+import org.apache.ibatis.annotations.Param;
 
 public interface UserDOMapper {
     int deleteByPrimaryKey(Long id);
@@ -24,4 +26,12 @@ public interface UserDOMapper {
     UserDO selectByPhone(String phone);
 
     FindUserByIdRspDTO findById(Long id);
+
+    /**
+     * 批量查询用户信息
+     *
+     * @param ids
+     * @return
+     */
+    List<UserDO> selectByIds(@Param("ids") List<Long> ids);
 }

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.spring.annotation.ConsumeMode;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.core.io.ClassPathResource;
@@ -35,7 +36,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 @RocketMQMessageListener(consumerGroup = "xiaohongshu_group",
-    topic = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW
+    topic = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW,
+    consumeMode = ConsumeMode.ORDERLY
 )
 @Slf4j
 public class FollowUnFollowConsumer implements RocketMQListener<Message> {

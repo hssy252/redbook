@@ -1,9 +1,13 @@
 package com.hssy.xiaohongshu.user.biz.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.alibaba.nacos.shaded.com.google.common.collect.Maps;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.enums.DeletedEnum;
 import com.hssy.framework.commom.enums.StatusEnum;
@@ -14,6 +18,7 @@ import com.hssy.framework.commom.util.ParamUtils;
 import com.hssy.xiaohongshu.oss.api.FileFeignApi;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.FindUsersByIdsReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
@@ -38,10 +43,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.boot.autoconfigure.cache.CacheProperties.Redis;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -326,7 +334,20 @@ public class UserServiceImpl implements UserService {
         }
 
         // redis没有就走数据库
-        FindUserByIdRspDTO  findUserByIdRspDTO =  userDOMapper.findById(id);
+        // 根据用户 ID 查询用户信息
+        UserDO userDO = userDOMapper.selectByPrimaryKey(id);
+
+        // 判空
+        if (Objects.isNull(userDO)) {
+            throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+        }
+
+        // 构建返参
+        FindUserByIdRspDTO findUserByIdRspDTO = FindUserByIdRspDTO.builder()
+            .id(userDO.getId())
+            .nickName(userDO.getNickname())
+            .avatar(userDO.getAvatar())
+            .build();
 
         if (Objects.isNull(findUserByIdRspDTO)){
             // 如果为空，就要做缓存穿透的逻辑
@@ -360,6 +381,80 @@ public class UserServiceImpl implements UserService {
         }
 
         return Response.success(Boolean.TRUE);
+    }
+
+    @Override
+    public Response<List<FindUserByIdRspDTO>> findByIds(FindUsersByIdsReqDTO findUsersByIdsReqDTO) {
+        // 先查缓存，看缓存里有没有
+        List<Long> userIds = findUsersByIdsReqDTO.getIds();
+        // 构建redis的key
+        List<String> keys = userIds.stream().map(RedisKeyConstants::buildUserInfoKey).toList();
+
+        // 获取缓存中的用户信息
+        List<Object> redisValues = redisTemplate.opsForValue().multiGet(keys);
+
+        // 这里先处理缓存不为空但可能不全的逻辑，因为无论是缓存为空还是缓存不全，最后都要查数据库
+        if (CollUtil.isNotEmpty(redisValues)){
+            // 如果缓存不为空，过滤缓存中为用户值为空的信息
+            redisValues = redisValues.stream().filter(Objects::nonNull).toList();
+            
+        }
+
+        // 返参
+        List<FindUserByIdRspDTO> findUserByIdRspDTOS = Lists.newArrayList();
+
+        // 再次判断过滤后是否为空，若不为空则开始转化实体类
+        if (CollUtil.isNotEmpty(redisValues)){
+            findUserByIdRspDTOS = redisValues.stream().map(
+                value->JsonUtils.parseObject((String) value,FindUserByIdRspDTO.class)
+            ).toList();
+        }
+
+        // 如果被查询的用户信息，都在 Redis 缓存中, 则直接返回
+        if (CollUtil.size(userIds) == CollUtil.size(findUserByIdRspDTOS)) {
+            return Response.success(findUserByIdRspDTOS);
+        }
+
+
+        // 还有另外两种情况：一种是缓存里没有用户信息数据，还有一种是缓存里数据不全，需要从数据库中补充
+        // 筛选出缓存里没有的用户数据，去查数据库
+        List<Long> userIdsNeedQuery = null;
+
+        // 判断哪些需要去数据库查
+        if (CollUtil.isNotEmpty(findUserByIdRspDTOS)){
+            Map<Long, FindUserByIdRspDTO> findUserByIdRspDTOMap = findUserByIdRspDTOS.stream().collect(Collectors.toMap(
+                FindUserByIdRspDTO::getId, findUserByIdRspDTO -> findUserByIdRspDTO
+            ));
+
+            // 如果在map中没查到就是要去数据库中查
+            userIdsNeedQuery = userIds.stream().filter(id->Objects.nonNull(findUserByIdRspDTOMap.get(id))).toList();
+        }
+
+        if (Objects.isNull(userIdsNeedQuery)){
+            userIdsNeedQuery = userIds;
+        }
+
+        List<UserDO> userDOS = userDOMapper.selectByIds(userIdsNeedQuery);
+
+        List<FindUserByIdRspDTO> list = null;
+        if (CollUtil.isNotEmpty(userDOS)) {
+            list = userDOS.stream().map(userDO -> FindUserByIdRspDTO.builder()
+                .id(userDO.getId())
+                .nickName(userDO.getNickname())
+                .avatar(userDO.getAvatar())
+                .introduction(userDO.getIntroduction())
+                .build()).toList();
+
+            // TODO 将数据库中查到的数据异步存入redis中
+        }
+
+        // 汇总结果
+        if (CollUtil.isNotEmpty(list)) {
+            findUserByIdRspDTOS.addAll(list);
+        }
+
+        return Response.success(findUserByIdRspDTOS);
+
     }
 
 }

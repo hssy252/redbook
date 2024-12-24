@@ -4,6 +4,7 @@ import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.FindUsersByIdsReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
@@ -12,6 +13,7 @@ import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
 import com.hssy.xiaohongshu.user.biz.service.UserService;
 import jakarta.annotation.Resource;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -75,6 +77,12 @@ public class UserController {
     @PostMapping("/exist")
     public Response<Boolean> userExistOrNot(@Validated @RequestBody UserExistReqDTO userExistReqDTO){
         return userService.userExistOrNot(userExistReqDTO);
+    }
+
+    @PostMapping("/findByIds")
+    @ApiOperationLog(description = "批量查询用户信息")
+    public Response<List<FindUserByIdRspDTO>> findByIds(@Validated @RequestBody FindUsersByIdsReqDTO findUsersByIdsReqDTO) {
+        return userService.findByIds(findUsersByIdsReqDTO);
     }
 
 

@@ -148,8 +148,11 @@ public class RelationServiceImpl implements RelationService {
 
         log.info("开始发送消息实体: {}",mqDTO);
 
+        // 顺序key
+        String hashKey = String.valueOf(userId);
+
         // 异步发送MQ消息
-        rocketMQTemplate.asyncSend(destination, message, new SendCallback() {
+        rocketMQTemplate.asyncSendOrderly(destination, message,hashKey, new SendCallback() {
             @Override
             public void onSuccess(SendResult sendResult) {
                 log.info("MQ消息发送成功，发送结果：{}",sendResult);
@@ -252,10 +255,13 @@ public class RelationServiceImpl implements RelationService {
         // 通过冒号连接, 可让 MQ 发送给主题 Topic 时，携带上标签 Tag
         String destination = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW + ":" + MQConstants.TAG_UNFOLLOW;
 
+        // 顺序key
+        String hashKey = String.valueOf(userId);
+
         log.info("==> 开始发送取关操作 MQ, 消息体: {}", unfollowUserMqDTO);
 
         // 异步发送 MQ 消息，提升接口响应速度
-        rocketMQTemplate.asyncSend(destination, message, new SendCallback() {
+        rocketMQTemplate.asyncSendOrderly(destination, message,hashKey, new SendCallback() {
             @Override
             public void onSuccess(SendResult sendResult) {
                 log.info("==> MQ 发送成功，SendResult: {}", sendResult);

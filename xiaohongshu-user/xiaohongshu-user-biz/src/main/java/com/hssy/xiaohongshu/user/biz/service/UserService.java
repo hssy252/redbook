@@ -3,12 +3,14 @@ package com.hssy.xiaohongshu.user.biz.service;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByIdReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.FindUserByPhoneReqDTO;
+import com.hssy.xiaohongshu.user.api.dto.req.FindUsersByIdsReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.RegisterUserReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UpdateUserPasswordReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.req.UserExistReqDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByPhoneRspDTO;
 import com.hssy.xiaohongshu.user.biz.model.vo.UpdateUserInfoReqVO;
+import java.util.List;
 
 /**
  * 功能简述
@@ -58,4 +60,12 @@ public interface UserService {
     Response<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO);
 
     Response<Boolean> userExistOrNot(UserExistReqDTO userExistReqDTO);
+
+    /**
+     * 批量根据用户 ID 查询用户信息
+     *
+     * @param findUsersByIdsReqDTO
+     * @return
+     */
+    Response<List<FindUserByIdRspDTO>> findByIds(FindUsersByIdsReqDTO findUsersByIdsReqDTO);
 }

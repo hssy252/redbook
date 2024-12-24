@@ -33,4 +33,9 @@ public class FindUserByIdRspDTO {
      */
     private String nickName;
 
+    /**
+     * 简介
+     */
+    private String introduction;
+
 }
