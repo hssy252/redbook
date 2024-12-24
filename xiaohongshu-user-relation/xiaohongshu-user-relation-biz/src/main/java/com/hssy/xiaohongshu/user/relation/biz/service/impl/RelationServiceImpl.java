@@ -8,6 +8,7 @@ import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.DateUtils;
 import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.xiaohongshu.user.api.api.UserFeignApi;
+import com.hssy.xiaohongshu.user.api.dto.resp.FindUserByIdRspDTO;
 import com.hssy.xiaohongshu.user.relation.biz.constants.FollowConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.MQConstants;
 import com.hssy.xiaohongshu.user.relation.biz.constants.RedisKeyConstants;
@@ -16,7 +17,9 @@ import com.hssy.xiaohongshu.user.relation.biz.domain.mapper.FollowingDOMapper;
 import com.hssy.xiaohongshu.user.relation.biz.enums.LuaResultEnum;
 import com.hssy.xiaohongshu.user.relation.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.user.relation.biz.model.dto.FollowUserMqDTO;
+import com.hssy.xiaohongshu.user.relation.biz.model.dto.UnfollowUserMqDTO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.UnfollowUserReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.rpc.UserRpcService;
 import com.hssy.xiaohongshu.user.relation.biz.service.RelationService;
 import jakarta.annotation.Resource;
@@ -155,6 +158,75 @@ public class RelationServiceImpl implements RelationService {
             @Override
             public void onException(Throwable throwable) {
                 log.error("MQ消息发送失败，发送结果：",throwable);
+            }
+        });
+
+        return Response.success();
+    }
+
+    /**
+     * 取关用户
+     *
+     * @param unfollowUserReqVO
+     * @return
+     */
+    @Override
+    public Response<?> unfollow(UnfollowUserReqVO unfollowUserReqVO) {
+        // 想要取关了用户 ID
+        Long unfollowUserId = unfollowUserReqVO.getUnfollowUserId();
+        // 当前登录用户 ID
+        Long userId = LoginUserContextHolder.getUserId();
+
+        // 无法取关自己
+        if (Objects.equals(userId, unfollowUserId)) {
+            throw new BizException(ResponseCodeEnum.CANT_UNFOLLOW_YOUR_SELF);
+        }
+
+        // 校验关注的用户是否存在
+        Boolean existOrNot = userRpcService.userExistOrNot(unfollowUserId);
+
+        if (Objects.isNull(existOrNot)||Boolean.FALSE.equals(existOrNot)) {
+            throw new BizException(ResponseCodeEnum.FOLLOW_USER_NOT_EXIST);
+        }
+
+        // 必须是关注了的用户，才能取关
+        String followingRedisKey = RedisKeyConstants.buildFollowingUserKey(userId);
+        Double score = redisTemplate.opsForZSet().score(followingRedisKey, unfollowUserId);
+
+        if (Objects.isNull(score)) {
+            throw new BizException(ResponseCodeEnum.NOT_FOLLOWED);
+        }
+
+        // 从自己的关注列表中删除
+        redisTemplate.opsForZSet().remove(followingRedisKey, unfollowUserId);
+
+        // 发送 MQ
+        // 构建消息体 DTO
+        UnfollowUserMqDTO unfollowUserMqDTO = UnfollowUserMqDTO.builder()
+            .userId(userId)
+            .unfollowUserId(unfollowUserId)
+            .createTime(LocalDateTime.now())
+            .build();
+
+        // 构建消息对象，并将 DTO 转成 Json 字符串设置到消息体中
+        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(unfollowUserMqDTO))
+            .build();
+
+        // 通过冒号连接, 可让 MQ 发送给主题 Topic 时，携带上标签 Tag
+        String destination = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW + ":" + MQConstants.TAG_UNFOLLOW;
+
+        log.info("==> 开始发送取关操作 MQ, 消息体: {}", unfollowUserMqDTO);
+
+        // 异步发送 MQ 消息，提升接口响应速度
+        rocketMQTemplate.asyncSend(destination, message, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+                log.info("==> MQ 发送成功，SendResult: {}", sendResult);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                log.error("==> MQ 发送异常: ", throwable);
             }
         });
 
