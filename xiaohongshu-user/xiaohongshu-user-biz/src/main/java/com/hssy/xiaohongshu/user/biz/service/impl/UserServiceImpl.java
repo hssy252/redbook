@@ -348,6 +348,7 @@ public class UserServiceImpl implements UserService {
             .id(userDO.getId())
             .nickName(userDO.getNickname())
             .avatar(userDO.getAvatar())
+            .introduction(userDO.getIntroduction())
             .build();
 
         if (Objects.isNull(findUserByIdRspDTO)){
