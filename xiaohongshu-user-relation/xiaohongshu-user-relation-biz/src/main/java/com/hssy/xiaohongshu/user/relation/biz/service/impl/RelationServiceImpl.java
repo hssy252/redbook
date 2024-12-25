@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.hssy.framework.biz.context.holder.LoginUserContextHolder;
 import com.hssy.framework.commom.exception.BizException;
+import com.hssy.framework.commom.response.PageResponse;
 import com.hssy.framework.commom.response.Response;
 import com.hssy.framework.commom.util.DateUtils;
 import com.hssy.framework.commom.util.JsonUtils;
@@ -18,6 +19,8 @@ import com.hssy.xiaohongshu.user.relation.biz.enums.LuaResultEnum;
 import com.hssy.xiaohongshu.user.relation.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.user.relation.biz.model.dto.FollowUserMqDTO;
 import com.hssy.xiaohongshu.user.relation.biz.model.dto.UnfollowUserMqDTO;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFollowingListReqVO;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFollowingUserRspVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.UnfollowUserReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.rpc.UserRpcService;
@@ -28,6 +31,7 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
@@ -274,6 +278,64 @@ public class RelationServiceImpl implements RelationService {
         });
 
         return Response.success();
+    }
+
+    /**
+     * 获取用户的关注列表
+     * @param findFollowingListReqVO
+     * @return
+     */
+    @Override
+    public PageResponse<FindFollowingUserRspVO> findFollowingList(FindFollowingListReqVO findFollowingListReqVO) {
+        // 获取要查询的用户id
+        Long userId = findFollowingListReqVO.getUserId();
+        // 获取要查询的页码
+        Integer pageNo = findFollowingListReqVO.getPageNo();
+
+        //构建redis的key,去redis缓存里查
+        String followKey = RedisKeyConstants.buildFollowingUserKey(userId);
+        Long size = redisTemplate.opsForZSet().zCard(followKey);
+        long count = Objects.isNull(size)? 0L:size;
+        // 返参
+        List<FindFollowingUserRspVO> findFollowingUserRspVOS = null;
+
+        if (count>0){
+            // 判断要查询的页码数是否超过总页数
+            long limit = 10L;
+            // 获取总页数
+            long totalPage = PageResponse.getTotalPage(count, limit);
+
+            if (pageNo>totalPage){
+                return PageResponse.success(null,pageNo,count);
+            }
+
+            // 否则则从redis缓存中获取用户的id,rev代表从高到低，这里的score是关注的时间戳，也就是按最新关注时间排序
+            long offset = (pageNo-1)*limit;
+
+            Set<Object> redisValues = redisTemplate.opsForZSet()
+                .reverseRangeByScore(followKey, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, offset, limit);
+
+            if (CollUtil.isNotEmpty(redisValues)){
+                List<Long> ids = redisValues.stream().map(id -> Long.valueOf((String) id)).toList();
+                List<FindUserByIdRspDTO> userInfoList = userRpcService.findByIds(ids);
+
+                if (CollUtil.isNotEmpty(userInfoList)){
+                    findFollowingUserRspVOS = userInfoList.stream().map(info -> FindFollowingUserRspVO.builder()
+                        .userId(info.getId())
+                        .avatar(info.getAvatar())
+                        .nickname(info.getNickName())
+                        .introduction(info.getIntroduction())
+                        .build()).toList();
+                }
+            }
+
+        }else {
+            // TODO redis里没有就查数据库
+
+            // TODO 将缓存结果异步存入数据库
+        }
+
+        return PageResponse.success(findFollowingUserRspVOS,pageNo,count);
     }
 
 
