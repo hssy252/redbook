@@ -3,6 +3,8 @@ package com.hssy.xiaohongshu.user.relation.biz.controller;
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.PageResponse;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFansUserReqVO;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFansUserRspVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFollowingListReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFollowingUserRspVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
@@ -40,6 +42,12 @@ public class RelationController {
     @ApiOperationLog(description = "查询用户关注列表")
     public PageResponse<FindFollowingUserRspVO> findFollowingList(@Validated @RequestBody FindFollowingListReqVO findFollowingListReqVO) {
         return relationService.findFollowingList(findFollowingListReqVO);
+    }
+
+    @PostMapping("/fans/list")
+    @ApiOperationLog(description = "查询用户粉丝列表")
+    public PageResponse<FindFansUserRspVO> findFansList(@Validated @RequestBody FindFansUserReqVO findFansListReqVO) {
+        return relationService.findFansList(findFansListReqVO);
     }
 
 
