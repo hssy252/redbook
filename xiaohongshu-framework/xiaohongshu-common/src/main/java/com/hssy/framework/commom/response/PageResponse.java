@@ -50,4 +50,14 @@ public class PageResponse<T> extends Response<List<T>> {
         return pageSize == 0 ? 0 : (totalCount + pageSize - 1) / pageSize;
     }
 
+    /**
+     * 获取分页查询的偏移量
+     * @param pageNo
+     * @param pageSize
+     * @return
+     */
+    public static long getPageOffset(long pageNo,long pageSize){
+        return (pageNo-1)*pageSize;
+    }
+
 }

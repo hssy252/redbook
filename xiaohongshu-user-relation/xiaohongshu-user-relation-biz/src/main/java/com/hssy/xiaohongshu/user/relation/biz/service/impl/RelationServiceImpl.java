@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
@@ -41,6 +42,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Service;
 
@@ -66,6 +68,9 @@ public class RelationServiceImpl implements RelationService {
 
     @Resource
     private FollowingDOMapper followingDOMapper;
+
+    @Resource(name = "taskExecutor")
+    private Executor taskExecutor;
 
     @Override
     public Response<?> followUser(FollowUserReqVO followUserReqVO) {
@@ -298,10 +303,10 @@ public class RelationServiceImpl implements RelationService {
         long count = Objects.isNull(size)? 0L:size;
         // 返参
         List<FindFollowingUserRspVO> findFollowingUserRspVOS = null;
+        long limit = 10L;
 
         if (count>0){
             // 判断要查询的页码数是否超过总页数
-            long limit = 10L;
             // 获取总页数
             long totalPage = PageResponse.getTotalPage(count, limit);
 
@@ -330,12 +335,51 @@ public class RelationServiceImpl implements RelationService {
             }
 
         }else {
-            // TODO redis里没有就查数据库
+            // redis里没有就查数据库
+            count = followingDOMapper.selectCount(userId);
 
-            // TODO 将缓存结果异步存入数据库
+            long totalPage = PageResponse.getTotalPage(count, limit);
+
+            // 如果查询页码大于总页码就返回空
+            if(pageNo>totalPage){
+                return PageResponse.success(null,pageNo,count);
+            }
+            // 构建分页查询偏移量用于数据库查询
+            long offset = PageResponse.getPageOffset(pageNo, limit);
+
+            List<FollowingDO> list =  followingDOMapper.selectPageListById(userId,offset,limit);
+
+            // 如果非空就调用rpc服务，并将do转化为dto
+            if (CollUtil.isNotEmpty(list)){
+                List<Long> userIds = list.stream().map(FollowingDO::getFollowingUserId).toList();
+
+                List<FindUserByIdRspDTO> rspDTOS = userRpcService.findByIds(userIds);
+
+                if (CollUtil.isNotEmpty(rspDTOS)){
+                    findFollowingUserRspVOS = rspDTOS.stream().map(dto-> FindFollowingUserRspVO.builder()
+                        .userId(dto.getId())
+                        .nickname(dto.getNickName())
+                        .avatar(dto.getAvatar())
+                        .introduction(dto.getIntroduction())
+                        .build()
+                    ).toList();
+                }
+
+                // TODO 异步将关注列表全量同步到redis中
+                taskExecutor.execute(()->syncFollowingList2Redis(userId));
+
+            }
+
         }
 
         return PageResponse.success(findFollowingUserRspVOS,pageNo,count);
+    }
+
+    /**
+     * 全量同步关注列表至 Redis 中
+     */
+    private void syncFollowingList2Redis(Long userId) {
+        // TODO
     }
 
 
