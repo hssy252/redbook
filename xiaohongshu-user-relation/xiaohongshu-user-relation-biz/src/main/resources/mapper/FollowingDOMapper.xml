@@ -30,6 +30,9 @@
     order by create_time desc
     limit #{offset},#{limit}
   </select>
+  <select id="selectAllByUserId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select following_user_id from t_following where user_id=#{userId} limit 1000
+  </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
     delete from t_following
     where id = #{id,jdbcType=BIGINT}

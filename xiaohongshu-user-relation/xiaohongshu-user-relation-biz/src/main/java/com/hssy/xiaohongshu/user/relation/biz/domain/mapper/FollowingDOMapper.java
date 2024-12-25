@@ -25,4 +25,6 @@ public interface FollowingDOMapper {
     long selectCount(Long userId);
 
     List<FollowingDO> selectPageListById(Long userId, long offset, long limit);
+
+    List<FollowingDO> selectAllByUserId(Long userId);
 }

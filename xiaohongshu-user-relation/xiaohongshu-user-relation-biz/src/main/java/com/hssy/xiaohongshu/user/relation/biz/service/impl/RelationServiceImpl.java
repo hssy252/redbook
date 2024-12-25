@@ -365,7 +365,7 @@ public class RelationServiceImpl implements RelationService {
                     ).toList();
                 }
 
-                // TODO 异步将关注列表全量同步到redis中
+                // 异步将关注列表全量同步到redis中
                 taskExecutor.execute(()->syncFollowingList2Redis(userId));
 
             }
@@ -379,7 +379,24 @@ public class RelationServiceImpl implements RelationService {
      * 全量同步关注列表至 Redis 中
      */
     private void syncFollowingList2Redis(Long userId) {
-        // TODO
+        // 查询用户关注列表的最新的一千个关注
+        List<FollowingDO> list =  followingDOMapper.selectAllByUserId(userId);
+        if (CollUtil.isNotEmpty(list)){
+            // 构建redis的缓存key
+            String key = RedisKeyConstants.buildFollowingUserKey(userId);
+
+            // 生成缓存过期时间
+            long expiredSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+            // 生成lua脚本参数
+            Object[] luaArgs = buildLuaArgs(list, expiredSeconds);
+
+            // 执行lua脚本，将用户的关注ids和对应关注时间缓存到redis里面
+            DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+            script.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/follow_batch_add_and_expire.lua")));
+            script.setResultType(Long.class);
+
+            redisTemplate.execute(script,Collections.singletonList(key),luaArgs);
+        }
     }
 
 
