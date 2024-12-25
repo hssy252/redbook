@@ -2,6 +2,8 @@ package com.hssy.xiaohongshu.user.relation.biz.service;
 
 import com.hssy.framework.commom.response.PageResponse;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFansUserReqVO;
+import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFansUserRspVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFollowingListReqVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FindFollowingUserRspVO;
 import com.hssy.xiaohongshu.user.relation.biz.model.vo.FollowUserReqVO;
@@ -35,5 +37,12 @@ public interface RelationService {
      * @return
      */
     PageResponse<FindFollowingUserRspVO> findFollowingList(FindFollowingListReqVO findFollowingListReqVO);
+
+    /**
+     * 查询用户的粉丝列表
+     * @param findFansUserReqVO
+     * @return
+     */
+    PageResponse<FindFansUserRspVO> findFansList(FindFansUserReqVO findFansUserReqVO);
 
 }
