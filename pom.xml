@@ -34,6 +34,8 @@
     <module>xiaohongshu-note</module>
     <!--用户关系服务-->
     <module>xiaohongshu-user-relation</module>
+    <!--计数服务-->
+    <module>xiaohongshu-count</module>
   </modules>
 
   <properties>
