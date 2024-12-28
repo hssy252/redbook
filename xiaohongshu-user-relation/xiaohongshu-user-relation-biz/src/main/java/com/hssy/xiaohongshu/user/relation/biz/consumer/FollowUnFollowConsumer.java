@@ -35,7 +35,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 
 @Component
-@RocketMQMessageListener(consumerGroup = "xiaohongshu_group",
+@RocketMQMessageListener(consumerGroup = "xiaohongshu_group" + MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW,
     topic = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW,
     consumeMode = ConsumeMode.ORDERLY
 )
