@@ -15,9 +15,14 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -37,6 +42,9 @@ public class CountFansConsumer implements RocketMQListener<String> {
 
     @Resource
     private RedisTemplate<String,Object> redisTemplate;
+
+    @Resource
+    private RocketMQTemplate rocketMQTemplate;
 
     private final BufferTrigger<String> bufferTrigger = BufferTrigger.<String>batchBlocking()
         .bufferSize(50000) // 缓存队列的最大容量
@@ -108,7 +116,23 @@ public class CountFansConsumer implements RocketMQListener<String> {
             }
         });
 
-        // TODO 发送MQ消息实现数据库入库
+        // 发送 MQ, 计数数据落库
+        // 构建消息体 DTO
+        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(countMap))
+            .build();
+
+        // 异步发送 MQ 消息，提升接口响应速度
+        rocketMQTemplate.asyncSend(MQConstants.TOPIC_COUNT_FANS_2_DB, message, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+                log.info("==> 【计数服务：粉丝数入库】MQ 发送成功，SendResult: {}", sendResult);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                log.error("==> 【计数服务：粉丝数入库】MQ 发送异常: ", throwable);
+            }
+        });
 
 
     }
