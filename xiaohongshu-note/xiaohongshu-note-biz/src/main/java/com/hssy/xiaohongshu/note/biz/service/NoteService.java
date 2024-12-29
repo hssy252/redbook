@@ -4,6 +4,7 @@ import com.hssy.framework.commom.response.Response;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.LikeNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.TopNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
@@ -61,5 +62,12 @@ public interface NoteService {
      * @return
      */
     Response<?> topNote(TopNoteReqVO topNoteReqVO);
+
+    /**
+     * 点赞笔记
+     * @param likeNoteReqVO
+     * @return
+     */
+    Response<?> likeNote(LikeNoteReqVO likeNoteReqVO);
 
 }

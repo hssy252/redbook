@@ -22,6 +22,7 @@ import com.hssy.xiaohongshu.note.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.LikeNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.PublishNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.TopNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.UpdateNoteReqVO;
@@ -571,6 +572,60 @@ public class NoteServiceImpl implements NoteService {
         log.info("====> MQ：删除笔记本地缓存发送成功...");
 
         return Response.success();
+    }
+
+    @Override
+    public Response<?> likeNote(LikeNoteReqVO likeNoteReqVO) {
+        // 1. 校验被点赞的笔记是否存在
+        Long noteId = likeNoteReqVO.getId();
+        checkNoteIsExist(noteId);
+
+        // 2. 判断目标笔记，是否已经点赞过
+
+        // 3. 更新用户 ZSET 点赞列表
+
+        // 4. 发送 MQ, 将点赞数据落库
+
+        return Response.success();
+    }
+
+
+    /**
+     * 校验笔记是否存在
+     * @param noteId
+     */
+    private void checkNoteIsExist(Long noteId) {
+        // 先从本地缓存校验
+        String findNoteDetailRspVOStrLocalCache = LOCAL_CACHE.getIfPresent(noteId);
+        // 解析 Json 字符串为 VO 对象
+        FindNoteDetailRspVO findNoteDetailRspVO = JsonUtils.parseObject(findNoteDetailRspVOStrLocalCache, FindNoteDetailRspVO.class);
+
+        // 若本地缓存没有
+        if (Objects.isNull(findNoteDetailRspVO)) {
+            // 再从 Redis 中校验
+            String noteDetailRedisKey = RedisKeyConstants.buildNoteDetailKey(noteId);
+
+            String noteDetailJson = redisTemplate.opsForValue().get(noteDetailRedisKey);
+
+            // 解析 Json 字符串为 VO 对象
+            findNoteDetailRspVO = JsonUtils.parseObject(noteDetailJson, FindNoteDetailRspVO.class);
+
+            // 都不存在，再查询数据库校验是否存在
+            if (Objects.isNull(findNoteDetailRspVO)) {
+                int count = noteDOMapper.selectCountByNoteId(noteId);
+
+                // 若数据库中也不存在，提示用户
+                if (count == 0) {
+                    throw new BizException(ResponseCodeEnum.NOTE_NOT_FOUND);
+                }
+
+                // 若数据库中存在，异步同步一下缓存
+                threadPoolTaskExecutor.submit(() -> {
+                    FindNoteDetailReqVO findNoteDetailReqVO = FindNoteDetailReqVO.builder().id(noteId).build();
+                    findNoteDetail(findNoteDetailReqVO);
+                });
+            }
+        }
     }
 
 
