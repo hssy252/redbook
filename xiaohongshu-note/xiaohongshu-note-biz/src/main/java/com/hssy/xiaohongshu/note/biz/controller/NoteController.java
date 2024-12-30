@@ -2,7 +2,7 @@ package com.hssy.xiaohongshu.note.biz.controller;
 
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
-import com.hssy.xiaohongshu.note.biz.model.dto.UnlikeNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.UnlikeNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.CollectNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;

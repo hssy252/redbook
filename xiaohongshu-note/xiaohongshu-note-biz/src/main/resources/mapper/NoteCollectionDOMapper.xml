@@ -79,6 +79,13 @@
       </if>
     </trim>
   </insert>
+  <insert id="insertOrUpdate" parameterType="com.hssy.xiaohongshu.note.biz.domain.dataobject.NoteCollectionDO">
+    INSERT INTO t_note_collection (user_id, note_id, create_time, status)
+    VALUES (#{userId}, #{noteId}, #{createTime}, #{status})
+    ON DUPLICATE KEY UPDATE
+                       create_time = #{createTime}, status = #{status};
+  </insert>
+
   <update id="updateByPrimaryKeySelective" parameterType="com.hssy.xiaohongshu.note.biz.domain.dataobject.NoteCollectionDO">
     update t_note_collection
     <set>

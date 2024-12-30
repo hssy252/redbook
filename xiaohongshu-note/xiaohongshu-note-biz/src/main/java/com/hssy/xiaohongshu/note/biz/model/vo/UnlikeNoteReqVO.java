@@ -1,4 +1,4 @@
-package com.hssy.xiaohongshu.note.biz.model.dto;
+package com.hssy.xiaohongshu.note.biz.model.vo;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
