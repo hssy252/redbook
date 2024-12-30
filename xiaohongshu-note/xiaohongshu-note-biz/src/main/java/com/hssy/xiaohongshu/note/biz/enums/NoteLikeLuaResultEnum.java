@@ -4,6 +4,10 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * @author 13759
+ */
+
 @Getter
 @AllArgsConstructor
 public enum NoteLikeLuaResultEnum {
@@ -11,6 +15,8 @@ public enum NoteLikeLuaResultEnum {
     NOT_EXIST(-1L),
     // 笔记已点赞
     NOTE_LIKED(1L),
+    // 笔记未点赞
+    NOTE_NOT_LIKED(2L),
     // 笔记点赞成功
     NOTE_LIKE_SUCCESS(0L),
     ;

@@ -25,6 +25,7 @@ import com.hssy.xiaohongshu.note.biz.enums.NoteTypeEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteVisibleEnum;
 import com.hssy.xiaohongshu.note.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.note.biz.model.dto.LikeUnlikeNoteMqDTO;
+import com.hssy.xiaohongshu.note.biz.model.dto.UnlikeNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
@@ -710,6 +711,62 @@ public class NoteServiceImpl implements NoteService {
                 log.error("## 【笔记点赞】消息发送失败, throwable：" + throwable);
             }
         });
+
+        return Response.success();
+    }
+
+    /**
+     * 取消点赞笔记
+     *
+     * @param unlikeNoteReqVO
+     * @return
+     */
+    @Override
+    public Response<?> unlikeNote(UnlikeNoteReqVO unlikeNoteReqVO) {
+        // 笔记ID
+        Long noteId = unlikeNoteReqVO.getId();
+
+        // 1. 校验笔记是否真实存在
+        checkNoteIsExist(noteId);
+
+        // 2. 校验笔记是否被点赞过
+        Long userId = LoginUserContextHolder.getUserId();
+        String bloomKey = RedisKeyConstants.buildBloomUserNoteLikeListKey(userId);
+        // 先查bloom过滤器，如果过滤器没有就异步初始化过滤器
+        DefaultRedisScript<Long> bloomScript = new DefaultRedisScript<>();
+        bloomScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/bloom_note_dislike_check.lua")));
+        bloomScript.setResultType(Long.class);
+
+        Long result = redisTemplate.execute(bloomScript, Collections.singletonList(bloomKey), noteId);
+        NoteLikeLuaResultEnum resultEnum = NoteLikeLuaResultEnum.valueOf(result);
+
+        switch (resultEnum){
+            case NOT_EXIST -> {
+                // 保底1天+随机秒数
+                long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+
+                // 异步初始化布隆过滤器
+                asyncBatchAddNoteLike2BloomAndExpire(userId, expireSeconds, bloomKey);
+
+                // 从数据库中校验笔记是否被点赞
+                int count = noteLikeDOMapper.selectCountByUserIdAndNoteId(userId, noteId);
+
+                // 未点赞，无法取消点赞操作，抛出业务异常
+                if (count == 0) throw new BizException(ResponseCodeEnum.NOTE_NOT_LIKED);
+            }
+            case NOTE_NOT_LIKED -> {
+                // 笔记未点赞，绝对正确
+                throw new BizException(ResponseCodeEnum.NOTE_NOT_LIKED);
+            }
+        }
+
+        // 3. 删除 ZSET 中已点赞的笔记 ID
+        // 用户点赞列表 ZSet Key
+        String userNoteLikeZSetKey = RedisKeyConstants.buildUserNoteLikeZSetKey(userId);
+
+        redisTemplate.opsForZSet().remove(userNoteLikeZSetKey, noteId);
+
+        // TODO: 4. 发送 MQ, 数据更新落库
 
         return Response.success();
     }

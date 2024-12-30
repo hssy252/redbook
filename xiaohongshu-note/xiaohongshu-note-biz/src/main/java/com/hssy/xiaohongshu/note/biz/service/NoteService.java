@@ -1,6 +1,7 @@
 package com.hssy.xiaohongshu.note.biz.service;
 
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.note.biz.model.dto.UnlikeNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
@@ -69,5 +70,12 @@ public interface NoteService {
      * @return
      */
     Response<?> likeNote(LikeNoteReqVO likeNoteReqVO);
+
+    /**
+     * 取消点赞笔记
+     * @param unlikeNoteReqVO
+     * @return
+     */
+    Response<?> unlikeNote(UnlikeNoteReqVO unlikeNoteReqVO);
 
 }

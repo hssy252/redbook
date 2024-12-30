@@ -2,6 +2,7 @@ package com.hssy.xiaohongshu.note.biz.controller;
 
 import com.hssy.framework.biz.operationlog.aspect.ApiOperationLog;
 import com.hssy.framework.commom.response.Response;
+import com.hssy.xiaohongshu.note.biz.model.dto.UnlikeNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
@@ -73,4 +74,10 @@ public class NoteController {
         return noteService.likeNote(likeNoteReqVO);
     }
 
+
+    @PostMapping(value = "/unlike")
+    @ApiOperationLog(description = "取消点赞笔记")
+    public Response<?> unlikeNote(@Validated @RequestBody UnlikeNoteReqVO unlikeNoteReqVO) {
+        return noteService.unlikeNote(unlikeNoteReqVO);
+    }
 }
