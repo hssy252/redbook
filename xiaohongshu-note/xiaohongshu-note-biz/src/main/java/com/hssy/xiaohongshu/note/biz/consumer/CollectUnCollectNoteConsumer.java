@@ -90,6 +90,7 @@ public class CollectUnCollectNoteConsumer implements RocketMQListener<Message> {
      * @param bodyJsonStr
      */
     private void handleUnCollectNoteTagMessage(String bodyJsonStr) {
+
     }
 
 }
