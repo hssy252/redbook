@@ -836,6 +836,8 @@ public class NoteServiceImpl implements NoteService {
 
         NoteCollectLuaResultEnum noteCollectLuaResultEnum = NoteCollectLuaResultEnum.valueOf(result);
 
+        String userNoteCollectZSetKey = RedisKeyConstants.buildUserNoteCollectZSetKey(userId);
+
         switch (noteCollectLuaResultEnum) {
             // Redis 中布隆过滤器不存在
             case NOT_EXIST -> {
@@ -866,7 +868,22 @@ public class NoteServiceImpl implements NoteService {
             }
             // 目标笔记已经被收藏 (可能存在误判，需要进一步确认)
             case NOTE_COLLECTED -> {
-                // TODO
+                // 校验 ZSet 列表中是否包含被收藏的笔记ID
+                Double score = redisTemplate.opsForZSet().score(userNoteCollectZSetKey, noteId);
+
+                if (Objects.nonNull(score)) {
+                    throw new BizException(ResponseCodeEnum.NOTE_ALREADY_COLLECTED);
+                }
+
+                // 若 Score 为空，则表示 ZSet 收藏列表中不存在，查询数据库校验
+                int count = noteCollectionDOMapper.selectNoteIsCollected(userId, noteId);
+
+                if (count > 0) {
+                    // 数据库里面有收藏记录，而 Redis 中 ZSet 未初始化，需要重新异步初始化 ZSet
+                    asynInitUserNoteCollectsZSet(userId, userNoteCollectZSetKey);
+
+                    throw new BizException(ResponseCodeEnum.NOTE_ALREADY_COLLECTED);
+                }
             }
         }
 
@@ -905,6 +922,61 @@ public class NoteServiceImpl implements NoteService {
         } catch (Exception e) {
             log.error("## 异步初始化【笔记收藏】布隆过滤器异常: ", e);
         }
+    }
+
+    /**
+     * 异步初始化用户收藏笔记 ZSet
+     * @param userId
+     * @param userNoteCollectZSetKey
+     */
+    private void asynInitUserNoteCollectsZSet(Long userId, String userNoteCollectZSetKey) {
+        threadPoolTaskExecutor.execute(() -> {
+            // 判断用户笔记收藏 ZSET 是否存在
+            boolean hasKey = redisTemplate.hasKey(userNoteCollectZSetKey);
+
+            // 不存在，则重新初始化
+            if (!hasKey) {
+                // 查询当前用户最新收藏的 300 篇笔记
+                List<NoteCollectionDO> noteCollectionDOS = noteCollectionDOMapper.selectCollectedByUserIdAndLimit(userId, 300);
+                if (CollUtil.isNotEmpty(noteCollectionDOS)) {
+                    // 保底1天+随机秒数
+                    long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+                    // 构建 Lua 参数
+                    Object[] luaArgs = buildNoteCollectZSetLuaArgs(noteCollectionDOS, expireSeconds);
+
+                    DefaultRedisScript<Long> script2 = new DefaultRedisScript<>();
+                    // Lua 脚本路径
+                    script2.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/batch_add_note_collect_zset_and_expire.lua")));
+                    // 返回值类型
+                    script2.setResultType(Long.class);
+
+                    redisTemplate.execute(script2, Collections.singletonList(userNoteCollectZSetKey), luaArgs);
+                }
+            }
+        });
+    }
+
+
+    /**
+     * 构建笔记收藏 ZSET Lua 脚本参数
+     *
+     * @param noteCollectionDOS
+     * @param expireSeconds
+     * @return
+     */
+    private static Object[] buildNoteCollectZSetLuaArgs(List<NoteCollectionDO> noteCollectionDOS, long expireSeconds) {
+        int argsLength = noteCollectionDOS.size() * 2 + 1; // 每个笔记收藏关系有 2 个参数（score 和 value），最后再跟一个过期时间
+        Object[] luaArgs = new Object[argsLength];
+
+        int i = 0;
+        for (NoteCollectionDO noteCollectionDO : noteCollectionDOS) {
+            luaArgs[i] = DateUtils.localDateTime2Timestamp(noteCollectionDO.getCreateTime()); // 收藏时间作为 score
+            luaArgs[i + 1] = noteCollectionDO.getNoteId();          // 笔记ID 作为 ZSet value
+            i += 2;
+        }
+
+        luaArgs[argsLength - 1] = expireSeconds; // 最后一个参数是 ZSet 的过期时间
+        return luaArgs;
     }
 
 
