@@ -13,6 +13,11 @@ public interface MQConstants {
     String TOPIC_LIKE_OR_UNLIKE = "LikeUnlikeTopic";
 
     /**
+     * Topic: 计数 - 笔记点赞数
+     */
+    String TOPIC_COUNT_NOTE_LIKE = "CountNoteLikeTopic";
+
+    /**
      * 点赞标签
      */
     String TAG_LIKE = "Like";
