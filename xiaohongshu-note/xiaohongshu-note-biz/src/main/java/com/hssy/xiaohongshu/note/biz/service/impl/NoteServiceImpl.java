@@ -18,11 +18,13 @@ import com.hssy.xiaohongshu.note.biz.domain.dataobject.NoteLikeDO;
 import com.hssy.xiaohongshu.note.biz.domain.mapper.NoteDOMapper;
 import com.hssy.xiaohongshu.note.biz.domain.mapper.NoteLikeDOMapper;
 import com.hssy.xiaohongshu.note.biz.domain.mapper.TopicDOMapper;
+import com.hssy.xiaohongshu.note.biz.enums.LikeUnlikeNoteTypeEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteLikeLuaResultEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteStatusEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteTypeEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteVisibleEnum;
 import com.hssy.xiaohongshu.note.biz.enums.ResponseCodeEnum;
+import com.hssy.xiaohongshu.note.biz.model.dto.LikeUnlikeNoteMqDTO;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
@@ -47,10 +49,14 @@ import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Service;
@@ -683,7 +689,27 @@ public class NoteServiceImpl implements NoteService {
 
 
         // 4. 发送 MQ, 将点赞数据落库
+        LikeUnlikeNoteMqDTO mqDTO = LikeUnlikeNoteMqDTO.builder()
+            .userId(userId)
+            .createTime(now)
+            .type(LikeUnlikeNoteTypeEnum.LIKE.getCode())
+            .build();
 
+        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(mqDTO)).build();
+        String topic = MQConstants.TOPIC_LIKE_OR_UNLIKE + ":" + MQConstants.TAG_LIKE;
+        String hashKey = String.valueOf(userId);
+
+        rocketMQTemplate.asyncSendOrderly(topic, message, hashKey, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+                log.info("## 【笔记点赞】消息发送成功，sendRedult: {}",sendResult);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                log.error("## 【笔记点赞】消息发送失败, throwable：" + throwable);
+            }
+        });
 
         return Response.success();
     }
