@@ -98,5 +98,27 @@ public class LikeUnlikeNoteConsumer implements RocketMQListener<Message> {
      * @param bodyJsonStr
      */
     private void handleUnlikeNoteTagMessage(String bodyJsonStr) {
+        LikeUnlikeNoteMqDTO mqDTO = JsonUtils.parseObject(bodyJsonStr, LikeUnlikeNoteMqDTO.class);
+
+        if (Objects.isNull(mqDTO)) return;
+
+        Long noteId = mqDTO.getNoteId();
+        Long userId = mqDTO.getUserId();
+        Integer type = mqDTO.getType();
+        LocalDateTime createTime = mqDTO.getCreateTime();
+
+        // 构建 DO 对象
+        NoteLikeDO noteLikeDO = NoteLikeDO.builder()
+            .userId(userId)
+            .noteId(noteId)
+            .createTime(createTime)
+            .status(type)
+            .build();
+
+        // 取消点赞：记录更新
+        int count = noteLikeDOMapper.update2UnlikeByUserIdAndNoteId(noteLikeDO);
+
+        // TODO: 发送计数 MQ
+
     }
 }

@@ -766,7 +766,33 @@ public class NoteServiceImpl implements NoteService {
 
         redisTemplate.opsForZSet().remove(userNoteLikeZSetKey, noteId);
 
-        // TODO: 4. 发送 MQ, 数据更新落库
+        // 4. 发送 MQ, 数据更新落库
+        LikeUnlikeNoteMqDTO mqDTO = LikeUnlikeNoteMqDTO.builder()
+            .userId(userId)
+            .noteId(noteId)
+            .type(LikeUnlikeNoteTypeEnum.UNLIKE.getCode())
+            .createTime(LocalDateTime.now())
+            .build();
+
+        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(mqDTO)).build();
+
+        // 通过冒号连接, 可让 MQ 发送给主题 Topic 时，携带上标签 Tag
+        String destination = MQConstants.TOPIC_LIKE_OR_UNLIKE + ":" + MQConstants.TAG_UNLIKE;
+
+        String hashKey = String.valueOf(userId);
+
+        // 异步发送 MQ 消息，提升接口响应速度
+        rocketMQTemplate.asyncSendOrderly(destination, message, hashKey, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+                log.info("==> 【笔记取消点赞】MQ 发送成功，SendResult: {}", sendResult);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                log.error("==> 【笔记取消点赞】MQ 发送异常: ", throwable);
+            }
+        });
 
         return Response.success();
     }

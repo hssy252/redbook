@@ -33,6 +33,12 @@ public interface NoteLikeDOMapper {
      */
     int insertOrUpdate(NoteLikeDO noteLikeDO);
 
+    /**
+     * 取消点赞
+     * @param noteLikeDO
+     * @return
+     */
+    int update2UnlikeByUserIdAndNoteId(NoteLikeDO noteLikeDO);
 
 
 }
