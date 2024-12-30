@@ -13,12 +13,15 @@ import com.hssy.framework.commom.util.DateUtils;
 import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.xiaohongshu.note.biz.constants.MQConstants;
 import com.hssy.xiaohongshu.note.biz.constants.RedisKeyConstants;
+import com.hssy.xiaohongshu.note.biz.domain.dataobject.NoteCollectionDO;
 import com.hssy.xiaohongshu.note.biz.domain.dataobject.NoteDO;
 import com.hssy.xiaohongshu.note.biz.domain.dataobject.NoteLikeDO;
+import com.hssy.xiaohongshu.note.biz.domain.mapper.NoteCollectionDOMapper;
 import com.hssy.xiaohongshu.note.biz.domain.mapper.NoteDOMapper;
 import com.hssy.xiaohongshu.note.biz.domain.mapper.NoteLikeDOMapper;
 import com.hssy.xiaohongshu.note.biz.domain.mapper.TopicDOMapper;
 import com.hssy.xiaohongshu.note.biz.enums.LikeUnlikeNoteTypeEnum;
+import com.hssy.xiaohongshu.note.biz.enums.NoteCollectLuaResultEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteLikeLuaResultEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteStatusEnum;
 import com.hssy.xiaohongshu.note.biz.enums.NoteTypeEnum;
@@ -26,6 +29,7 @@ import com.hssy.xiaohongshu.note.biz.enums.NoteVisibleEnum;
 import com.hssy.xiaohongshu.note.biz.enums.ResponseCodeEnum;
 import com.hssy.xiaohongshu.note.biz.model.dto.LikeUnlikeNoteMqDTO;
 import com.hssy.xiaohongshu.note.biz.model.dto.UnlikeNoteReqVO;
+import com.hssy.xiaohongshu.note.biz.model.vo.CollectNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.DeleteNoteReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailReqVO;
 import com.hssy.xiaohongshu.note.biz.model.vo.FindNoteDetailRspVO;
@@ -99,6 +103,9 @@ public class NoteServiceImpl implements NoteService {
 
     @Resource
     private NoteLikeDOMapper noteLikeDOMapper;
+
+    @Resource
+    private NoteCollectionDOMapper noteCollectionDOMapper;
 
     /**
      * 笔记详情本地缓存
@@ -796,6 +803,111 @@ public class NoteServiceImpl implements NoteService {
 
         return Response.success();
     }
+
+    /**
+     * 收藏笔记
+     *
+     * @param collectNoteReqVO
+     * @return
+     */
+    @Override
+    public Response<?> collectNote(CollectNoteReqVO collectNoteReqVO) {
+        // 笔记ID
+        Long noteId = collectNoteReqVO.getId();
+
+        // 1. 校验被收藏的笔记是否存在
+        checkNoteIsExist(noteId);
+
+        //2. 判断目标笔记，是否已经收藏过
+        // 当前登录用户ID
+        Long userId = LoginUserContextHolder.getUserId();
+
+        // 布隆过滤器 Key
+        String bloomUserNoteCollectListKey = RedisKeyConstants.buildBloomUserNoteCollectListKey(userId);
+
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        // Lua 脚本路径
+        script.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/bloom_note_collect_check.lua")));
+        // 返回值类型
+        script.setResultType(Long.class);
+
+        // 执行 Lua 脚本，拿到返回结果
+        Long result = redisTemplate.execute(script, Collections.singletonList(bloomUserNoteCollectListKey), noteId);
+
+        NoteCollectLuaResultEnum noteCollectLuaResultEnum = NoteCollectLuaResultEnum.valueOf(result);
+
+        switch (noteCollectLuaResultEnum) {
+            // Redis 中布隆过滤器不存在
+            case NOT_EXIST -> {
+                // 从数据库中校验笔记是否被收藏，并异步初始化布隆过滤器，设置过期时间
+                int count = noteCollectionDOMapper.selectCountByUserIdAndNoteId(userId, noteId);
+
+                // 保底1天+随机秒数
+                long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+
+                // 目标笔记已经被收藏
+                if (count > 0) {
+                    // 异步初始化布隆过滤器
+                    threadPoolTaskExecutor.submit(() ->
+                        batchAddNoteCollect2BloomAndExpire(userId, expireSeconds, bloomUserNoteCollectListKey));
+                    throw new BizException(ResponseCodeEnum.NOTE_ALREADY_LIKED);
+                }
+
+                // 若目标笔记未被收藏，查询当前用户是否有收藏其他笔记，有则同步初始化布隆过滤器
+                batchAddNoteCollect2BloomAndExpire(userId, expireSeconds, bloomUserNoteCollectListKey);
+
+                // 添加当前收藏笔记 ID 到布隆过滤器中
+                // Lua 脚本路径
+                script.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/bloom_add_note_collect_and_expire.lua")));
+                // 返回值类型
+                script.setResultType(Long.class);
+                redisTemplate.execute(script, Collections.singletonList(bloomUserNoteCollectListKey), noteId, expireSeconds);
+
+            }
+            // 目标笔记已经被收藏 (可能存在误判，需要进一步确认)
+            case NOTE_COLLECTED -> {
+                // TODO
+            }
+        }
+
+
+        // TODO: 3. 更新用户 ZSET 收藏列表
+
+        // TODO: 4. 发送 MQ, 将收藏数据落库
+
+        return Response.success();
+    }
+
+    /**
+     * 初始化笔记收藏布隆过滤器
+     * @param userId
+     * @param expireSeconds
+     * @param bloomUserNoteCollectListKey
+     */
+    private void batchAddNoteCollect2BloomAndExpire(Long userId, long expireSeconds, String bloomUserNoteCollectListKey) {
+        try {
+            // 异步全量同步一下，并设置过期时间
+            List<NoteCollectionDO> noteCollectionDOS = noteCollectionDOMapper.selectByUserId(userId);
+
+            if (CollUtil.isNotEmpty(noteCollectionDOS)) {
+                DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+                // Lua 脚本路径
+                script.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/bloom_batch_add_note_collect_and_expire.lua")));
+                // 返回值类型
+                script.setResultType(Long.class);
+
+                // 构建 Lua 参数
+                List<Object> luaArgs = Lists.newArrayList();
+                noteCollectionDOS.forEach(noteCollectionDO -> luaArgs.add(noteCollectionDO.getNoteId())); // 将每个收藏的笔记 ID 传入
+                luaArgs.add(expireSeconds);  // 最后一个参数是过期时间（秒）
+                redisTemplate.execute(script, Collections.singletonList(bloomUserNoteCollectListKey), luaArgs.toArray());
+            }
+        } catch (Exception e) {
+            log.error("## 异步初始化【笔记收藏】布隆过滤器异常: ", e);
+        }
+    }
+
+
 
     private void asyncInitUserNoteLikesZSet(Long userId, String zSetKey) {
         threadPoolTaskExecutor.execute(() -> {
