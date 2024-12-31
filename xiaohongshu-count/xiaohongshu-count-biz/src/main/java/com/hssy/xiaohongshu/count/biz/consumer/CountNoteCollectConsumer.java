@@ -1,11 +1,13 @@
 package com.hssy.xiaohongshu.count.biz.consumer;
 
 import com.github.phantomthief.collection.BufferTrigger;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hssy.framework.commom.util.JsonUtils;
 import com.hssy.xiaohongshu.count.biz.constants.MQConstants;
 import com.hssy.xiaohongshu.count.biz.constants.RedisKeyConstants;
 import com.hssy.xiaohongshu.count.biz.enums.CollectUnCollectNoteTypeEnum;
+import com.hssy.xiaohongshu.count.biz.model.dto.AggregationCountCollectUnCollectNoteMqDTO;
 import com.hssy.xiaohongshu.count.biz.model.dto.CountCollectUnCollectNoteMqDTO;
 import jakarta.annotation.Resource;
 import java.time.Duration;
@@ -63,10 +65,12 @@ public class CountNoteCollectConsumer implements RocketMQListener<String> {
 
         // 按组汇总数据，统计出最终的计数
         // key 为笔记 ID, value 为最终操作的计数
-        Map<Long, Integer> countMap = Maps.newHashMap();
+        List<AggregationCountCollectUnCollectNoteMqDTO> countList = Lists.newArrayList();
 
         for (Map.Entry<Long, List<CountCollectUnCollectNoteMqDTO>> entry : groupMap.entrySet()) {
             List<CountCollectUnCollectNoteMqDTO> list = entry.getValue();
+            Long noteId = entry.getKey();
+            Long creatorId = list.get(0).getNoteCreatorId();
             // 最终的计数值，默认为 0
             int finalCount = 0;
             for (CountCollectUnCollectNoteMqDTO countCollectUnCollectNoteMqDTO : list) {
@@ -84,16 +88,24 @@ public class CountNoteCollectConsumer implements RocketMQListener<String> {
                     case UN_COLLECT -> finalCount -= 1; // 如果为取消收藏操作，点赞数 -1
                 }
             }
-            // 将分组后统计出的最终计数，存入 countMap 中
-            countMap.put(entry.getKey(), finalCount);
+            // 将分组后统计出的最终计数，存入 countList 中
+            countList.add(AggregationCountCollectUnCollectNoteMqDTO.builder()
+                    .noteId(noteId)
+                    .count(finalCount)
+                    .creatorId(creatorId)
+                    .build());
         }
 
-        log.info("## 【笔记收藏数】聚合后的计数数据: {}", JsonUtils.toJsonString(countMap));
+        log.info("## 【笔记收藏数】聚合后的计数数据: {}", JsonUtils.toJsonString(countList));
 
         // 更新 Redis
-        countMap.forEach((k, v) -> {
+        countList.forEach((dto) -> {
+            Long creatorId = dto.getCreatorId();
+            Integer count = dto.getCount();
+            Long noteId = dto.getNoteId();
+
             // Redis Hash Key
-            String redisKey = RedisKeyConstants.buildCountNoteKey(k);
+            String redisKey = RedisKeyConstants.buildCountNoteKey(noteId);
             // 判断 Redis 中 Hash 是否存在
             boolean isExisted = redisTemplate.hasKey(redisKey);
 
@@ -101,12 +113,25 @@ public class CountNoteCollectConsumer implements RocketMQListener<String> {
             // (因为缓存设有过期时间，考虑到过期后，缓存会被删除，这里需要判断一下，存在才会去更新，而初始化工作放在查询计数来做)
             if (isExisted) {
                 // 对目标用户 Hash 中的收藏总数字段进行计数操作
-                redisTemplate.opsForHash().increment(redisKey, RedisKeyConstants.FIELD_COLLECT_TOTAL, v);
+                redisTemplate.opsForHash().increment(redisKey, RedisKeyConstants.FIELD_COLLECT_TOTAL, count);
             }
+
+            // Redis Hash Key
+            String userKey = RedisKeyConstants.buildCountUserKey(creatorId);
+            // 判断 Redis 中 Hash 是否存在
+            boolean exist = redisTemplate.hasKey(userKey);
+
+            // 若存在才会更新
+            // (因为缓存设有过期时间，考虑到过期后，缓存会被删除，这里需要判断一下，存在才会去更新，而初始化工作放在查询计数来做)
+            if (exist) {
+                // 对目标用户 Hash 中的收藏总数字段进行计数操作
+                redisTemplate.opsForHash().increment(userKey, RedisKeyConstants.FIELD_COLLECT_TOTAL, count);
+            }
+
         });
 
         // 发送 MQ, 笔记收藏数据落库
-        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(countMap))
+        Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(countList))
             .build();
 
         // 异步发送 MQ 消息

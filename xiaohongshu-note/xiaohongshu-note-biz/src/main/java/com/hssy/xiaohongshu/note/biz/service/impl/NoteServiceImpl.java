@@ -822,7 +822,7 @@ public class NoteServiceImpl implements NoteService {
         Long noteId = collectNoteReqVO.getId();
 
         // 1. 校验被收藏的笔记是否存在
-        checkNoteIsExistAndGetCreatorId(noteId);
+        Long creatorId = checkNoteIsExistAndGetCreatorId(noteId);
 
         //2. 判断目标笔记，是否已经收藏过
         // 当前登录用户ID
@@ -936,6 +936,7 @@ public class NoteServiceImpl implements NoteService {
             .noteId(noteId)
             .type(CollectUnCollectNoteTypeEnum.COLLECT.getCode()) // 收藏笔记
             .createTime(now)
+            .noteCreatorId(creatorId)
             .build();
 
         // 构建消息对象，并将 DTO 转成 Json 字符串设置到消息体中
@@ -976,7 +977,7 @@ public class NoteServiceImpl implements NoteService {
         Long noteId = unCollectNoteReqVO.getId();
 
         // 1. 校验笔记是否真实存在
-        checkNoteIsExistAndGetCreatorId(noteId);
+        Long creatorId = checkNoteIsExistAndGetCreatorId(noteId);
 
         // 2. 校验笔记是否被收藏过
         // 当前登录用户ID
@@ -1030,6 +1031,7 @@ public class NoteServiceImpl implements NoteService {
             .noteId(noteId)
             .type(CollectUnCollectNoteTypeEnum.UN_COLLECT.getCode()) // 取消收藏笔记
             .createTime(LocalDateTime.now())
+            .noteCreatorId(creatorId)
             .build();
 
         // 构建消息对象，并将 DTO 转成 Json 字符串设置到消息体中
