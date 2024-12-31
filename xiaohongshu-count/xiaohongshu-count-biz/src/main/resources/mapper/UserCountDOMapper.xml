@@ -100,6 +100,12 @@
     VALUES (#{userId}, #{count})
     ON DUPLICATE KEY UPDATE collect_total = collect_total + (#{count});
   </insert>
+  <insert id="insertOrUpdateNoteTotalByUserId" parameterType="map">
+    INSERT INTO t_user_count (user_id, note_total)
+    VALUES (#{userId}, #{count})
+    ON DUPLICATE KEY UPDATE note_total = note_total + (#{count});
+  </insert>
+
 
 
   <update id="updateByPrimaryKeySelective" parameterType="com.hssy.xiaohongshu.count.biz.domain.dataobject.UserCountDO">
