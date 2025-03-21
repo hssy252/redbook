@@ -43,6 +43,13 @@ public class CreateTableXxlJob {
 
                 // 创建表
                 createTableMapper.createDataAlignFollowingCountTempTable(tableNameSuffix);
+                createTableMapper.createDataAlignFansCountTempTable(tableNameSuffix);
+                createTableMapper.createDataAlignNoteCollectCountTempTable(tableNameSuffix);
+                createTableMapper.createDataAlignUserCollectCountTempTable(tableNameSuffix);
+                createTableMapper.createDataAlignUserLikeCountTempTable(tableNameSuffix);
+                createTableMapper.createDataAlignNoteLikeCountTempTable(tableNameSuffix);
+                createTableMapper.createDataAlignNotePublishCountTempTable(tableNameSuffix);
+
             }
         }
 
